@@ -83,6 +83,7 @@ let currentDayNumber = null;
 let restTimerInterval = null;
 let restTimerEndsAt = 0;
 let restTimerRemaining = 90;
+let expandedExerciseIndex = 0;
 
 /* =========================================================
    2. WORKOUT PROGRAMS
@@ -135,7 +136,7 @@ const muscleBuildingDays = [
       { name: "EZ-Bar Curl", sets: 3, reps: "6–10", rest: "90–120 sec", description: "Controlled heavy curling without hip drive." },
       { name: "Preacher Curl", sets: 3, reps: "8–12", rest: "75–90 sec", description: "Control the bottom position." },
       { name: "Hammer Curl", sets: 2, reps: "10–15", rest: "60–90 sec", description: "Build brachialis and brachioradialis." },
-      { name: "Delt + Triceps Finisher", sets: 2, reps: "15–25 + 15–20", rest: "Minimal rest", description: "Perform cable lateral raises immediately followed by rope pressdowns. Complete both movements in each round." }
+      { name: "Delt + Triceps Finisher", sets: 2, reps: "15–25 + 15–20", rest: "Minimal rest", description: "Perform cable lateral raises immediately followed by rope pressdowns." }
     ]
   },
   {
@@ -219,17 +220,58 @@ const programs = [
 ];
 
 /* =========================================================
-   3. PAGE NAVIGATION
+   3. PAGE NAVIGATION & MOBILE DRAWER
 ========================================================= */
-const pageNames = { dashboard: "Dashboard", workouts: "Workouts", food: "Food diary", weight: "Body weight", progress: "Progress" };
+const pageNames = {
+  dashboard: "Dashboard",
+  workouts: "Workouts",
+  food: "Food diary",
+  weight: "Body weight",
+  progress: "Progress"
+};
+
+const sidebar = document.getElementById("sidebar");
+const backdrop = document.getElementById("sidebarBackdrop");
+const menuButton = document.getElementById("menuButton");
+const closeButton = document.getElementById("sidebarCloseButton");
+
+function openSidebar() {
+  sidebar?.classList.add("sidebar-open");
+  backdrop?.classList.add("active");
+  menuButton?.setAttribute("aria-expanded", "true");
+}
+
+function closeSidebar() {
+  sidebar?.classList.remove("sidebar-open");
+  backdrop?.classList.remove("active");
+  menuButton?.setAttribute("aria-expanded", "false");
+}
+
+menuButton?.addEventListener("click", () => {
+  if (sidebar?.classList.contains("sidebar-open")) {
+    closeSidebar();
+  } else {
+    openSidebar();
+  }
+});
+
+closeButton?.addEventListener("click", closeSidebar);
+backdrop?.addEventListener("click", closeSidebar);
 
 function showPage(pageId) {
   if (!pageNames[pageId]) return;
-  document.querySelectorAll(".page-section").forEach(section => section.classList.toggle("active-page", section.id === pageId));
-  document.querySelectorAll(".nav-link").forEach(button => button.classList.toggle("active", button.dataset.page === pageId));
+  document.querySelectorAll(".page-section").forEach(section =>
+    section.classList.toggle("active-page", section.id === pageId)
+  );
+  document.querySelectorAll(".nav-link").forEach(button =>
+    button.classList.toggle("active", button.dataset.page === pageId)
+  );
+  document.querySelectorAll(".mobile-tab-btn").forEach(button =>
+    button.classList.toggle("active", button.dataset.page === pageId)
+  );
   document.getElementById("pageTitle").textContent = pageNames[pageId];
-  document.getElementById("sidebar").classList.remove("sidebar-open");
-  document.getElementById("menuButton").setAttribute("aria-expanded", "false");
+  closeSidebar();
+
   if (pageId === "dashboard") renderDashboard();
   if (pageId === "food") renderFood();
   if (pageId === "weight") renderWeight();
@@ -237,17 +279,22 @@ function showPage(pageId) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-document.querySelectorAll(".nav-link").forEach(button => button.addEventListener("click", () => showPage(button.dataset.page)));
-document.querySelectorAll("[data-go]").forEach(button => button.addEventListener("click", event => {
-  event.preventDefault();
-  showPage(button.dataset.go);
-}));
-document.getElementById("menuButton").addEventListener("click", () => {
-  const sidebar = document.getElementById("sidebar");
-  sidebar.classList.toggle("sidebar-open");
-  document.getElementById("menuButton").setAttribute("aria-expanded", String(sidebar.classList.contains("sidebar-open")));
+document.querySelectorAll(".nav-link").forEach(button =>
+  button.addEventListener("click", () => showPage(button.dataset.page))
+);
+document.querySelectorAll(".mobile-tab-btn").forEach(button =>
+  button.addEventListener("click", () => showPage(button.dataset.page))
+);
+document.querySelectorAll("[data-go]").forEach(button =>
+  button.addEventListener("click", event => {
+    event.preventDefault();
+    showPage(button.dataset.go);
+  })
+);
+
+document.getElementById("todayLabel").textContent = new Date().toLocaleDateString("en-IN", {
+  weekday: "short", day: "numeric", month: "short"
 });
-document.getElementById("todayLabel").textContent = new Date().toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
 
 /* =========================================================
    4. PROGRAM AND DAY NAVIGATION
@@ -256,11 +303,18 @@ function renderPrograms() {
   const container = document.getElementById("programGrid");
   container.innerHTML = programs.map(program => `
     <button class="program-card" type="button" data-program="${escapeHTML(program.id)}">
-      <span class="program-number">${escapeHTML(program.number)}</span><span class="eyebrow">${escapeHTML(program.category)}</span>
-      <h3>${escapeHTML(program.name)}</h3><p>${escapeHTML(program.description)}</p>
-      <span class="program-card-footer"><span>${escapeHTML(program.duration)} / week</span><span>View plan ↗</span></span>
+      <span class="program-number">${escapeHTML(program.number)}</span>
+      <span class="eyebrow">${escapeHTML(program.category)}</span>
+      <h3>${escapeHTML(program.name)}</h3>
+      <p>${escapeHTML(program.description)}</p>
+      <span class="program-card-footer">
+        <span>${escapeHTML(program.duration)} / week</span>
+        <span>View plan ↗</span>
+      </span>
     </button>`).join("");
-  container.querySelectorAll("[data-program]").forEach(button => button.addEventListener("click", () => openProgram(button.dataset.program)));
+  container.querySelectorAll("[data-program]").forEach(button =>
+    button.addEventListener("click", () => openProgram(button.dataset.program))
+  );
 }
 
 function openProgram(programId) {
@@ -273,13 +327,20 @@ function openProgram(programId) {
   document.getElementById("workoutDetail").classList.add("hidden");
   document.getElementById("selectedProgramTitle").textContent = program.name;
   document.getElementById("selectedProgramDescription").textContent = program.description;
+
   const dayGrid = document.getElementById("dayGrid");
   dayGrid.innerHTML = program.days.map(day => `
     <button class="day-card" type="button" data-day="${day.day}">
       <span class="day-number">${String(day.day).padStart(2, "0")}</span>
-      <span class="day-card-copy"><h3>Day ${day.day} · ${escapeHTML(day.title)}</h3><p>${day.exercises.length} exercises · View workout</p></span><span class="day-arrow">→</span>
+      <span class="day-card-copy">
+        <h3>Day ${day.day} · ${escapeHTML(day.title)}</h3>
+        <p>${day.exercises.length} exercises · View workout</p>
+      </span>
+      <span class="day-arrow">→</span>
     </button>`).join("");
-  dayGrid.querySelectorAll("[data-day]").forEach(button => button.addEventListener("click", () => openWorkout(Number(button.dataset.day))));
+  dayGrid.querySelectorAll("[data-day]").forEach(button =>
+    button.addEventListener("click", () => openWorkout(Number(button.dataset.day)))
+  );
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -298,7 +359,9 @@ function getCurrentDay() {
   return program?.days.find(item => item.day === currentDayNumber) || null;
 }
 
-function draftKey() { return `${currentProgramId}:${currentDayNumber}`; }
+function draftKey() {
+  return `${currentProgramId}:${currentDayNumber}`;
+}
 
 function openWorkout(dayNumber) {
   const program = programs.find(item => item.id === currentProgramId);
@@ -314,11 +377,13 @@ function openWorkout(dayNumber) {
   document.getElementById("workoutSubtitle").textContent = day.subtitle || `${day.title} Workout`;
   document.getElementById("workoutDescription").textContent = day.description || program.description;
   document.getElementById("exerciseCount").textContent = `${day.exercises.length} exercises`;
-  document.getElementById("recoveryContent").textContent = "Use controlled technique, follow the listed rest periods and stop if you experience sharp pain. Prioritize sleep, adequate food and recovery between sessions.";
+  document.getElementById("recoveryContent").textContent =
+    "Use controlled technique, follow the listed rest periods and stop if you experience sharp pain. Prioritize sleep, adequate food and recovery between sessions.";
   document.getElementById("workoutLogMessage").textContent = "";
   document.getElementById("restTimerStatus").textContent = "Ready when you are.";
   document.getElementById("restTimerDisplay").textContent = "01:30";
   document.getElementById("restTimerDisplay").classList.remove("timer-running");
+
   expandedExerciseIndex = 0;
   renderExercises(day);
   renderWorkoutLogger(day);
@@ -326,8 +391,6 @@ function openWorkout(dayNumber) {
   updateWorkoutProgress();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
-
-let expandedExerciseIndex = 0;
 
 function previousSetPerformance(exerciseName, setIndex) {
   const latestLogs = workoutLogs.slice().reverse();
@@ -344,27 +407,45 @@ function previousSetPerformance(exerciseName, setIndex) {
 
 function renderExercises(day) {
   const container = document.getElementById("exerciseList");
+  const draft = workoutDrafts[draftKey()];
+  const setDrafts = draft?.sets || {};
+
   container.innerHTML = day.exercises.map((exercise, index) => {
     const isExpanded = index === expandedExerciseIndex;
     const previous = previousSetPerformance(exercise.name, 0);
-    const draft = workoutDrafts[draftKey()];
-    const setDrafts = draft?.sets || {};
-    const doneCount = Array.from({ length: exercise.sets }, (_, setIndex) => setDrafts[`${index}-${setIndex}`]?.completed ? 1 : 0).reduce((a,b)=>a+b,0);
+    const doneCount = Array.from({ length: exercise.sets }, (_, setIndex) =>
+      setDrafts[`${index}-${setIndex}`]?.completed ? 1 : 0
+    ).reduce((a, b) => a + b, 0);
+
     return `
       <article class="exercise-card ${isExpanded ? "is-expanded" : ""} ${doneCount === exercise.sets ? "is-complete" : ""}" data-exercise-card="${index}">
         <button type="button" class="exercise-card-toggle" data-exercise-toggle="${index}" aria-expanded="${isExpanded}">
           <span class="exercise-number">${String(index + 1).padStart(2, "0")}</span>
-          <span class="exercise-title-block"><h3>${escapeHTML(exercise.name)}</h3><p>${escapeHTML(exercise.description)}</p></span>
-          <span class="exercise-tags"><span class="tag">${exercise.sets} Sets</span><span class="tag">${escapeHTML(exercise.reps)} Reps</span><span class="tag rest">◴ ${escapeHTML(exercise.rest)} Rest</span></span>
+          <span class="exercise-title-block">
+            <h3>${escapeHTML(exercise.name)}</h3>
+            <p>${escapeHTML(exercise.description)}</p>
+          </span>
+          <span class="exercise-tags">
+            <span class="tag">${exercise.sets} Sets</span>
+            <span class="tag">${escapeHTML(exercise.reps)} Reps</span>
+            <span class="tag rest">⏱ ${escapeHTML(exercise.rest)}</span>
+          </span>
           <span class="exercise-chevron" aria-hidden="true">${isExpanded ? "⌃" : "⌄"}</span>
         </button>
-        <div class="exercise-card-summary"><span class="summary-check">${doneCount === exercise.sets ? "✓" : "•"}</span><span data-card-summary="${index}">${doneCount === exercise.sets ? "Completed" : `${doneCount} / ${exercise.sets} sets complete`}</span><span class="summary-best">${previous ? `Previous best: ${formatDecimal(previous.weight)} kg × ${formatDecimal(previous.reps)}` : ""}</span></div>
-        <div class="exercise-card-body" data-exercise-body="${index}" ${isExpanded ? "" : "hidden"}><div class="exercise-log-slot" data-log-slot="${index}"></div></div>
+        <div class="exercise-card-summary">
+          <span class="summary-check">${doneCount === exercise.sets ? "✓" : "•"}</span>
+          <span data-card-summary="${index}">${doneCount === exercise.sets ? "Completed" : `${doneCount} / ${exercise.sets} sets complete`}</span>
+          <span class="summary-best">${previous ? `Best: ${formatDecimal(previous.weight)}kg × ${formatDecimal(previous.reps)}` : ""}</span>
+        </div>
+        <div class="exercise-card-body" data-exercise-body="${index}" ${isExpanded ? "" : "hidden"}>
+          <div class="exercise-log-slot" data-log-slot="${index}"></div>
+        </div>
       </article>`;
   }).join("");
 }
+
 /* =========================================================
-   5. SET-BY-SET LOGGING, DRAFT SAVING AND SESSION PROGRESS
+   5. SET-BY-SET LOGGING WITH FULL MOBILE ADAPTATION
 ========================================================= */
 function restSecondsFromText(restText) {
   const text = String(restText || "").toLowerCase();
@@ -377,70 +458,91 @@ function restSecondsFromText(restText) {
 }
 
 function renderWorkoutLogger(day) {
-  const container = document.getElementById("workoutLogInputs");
-  container.innerHTML = day.exercises.map((exercise, exerciseIndex) => {
-    const isFinisher = exercise.name === "Delt + Triceps Finisher";
-    return `
-      <div class="exercise-log-block" data-log-exercise="${exerciseIndex}">
-        <div class="exercise-log-heading"><div><h3>${String(exerciseIndex + 1).padStart(2, "0")} · ${escapeHTML(exercise.name)}</h3><p>Target: ${exercise.sets} sets · ${escapeHTML(exercise.reps)} reps</p></div><span class="exercise-count" data-exercise-progress="${exerciseIndex}">0 / ${exercise.sets}</span></div>
-        ${Array.from({ length: exercise.sets }, (_, setIndex) => `
-          <div class="set-row" data-set-row="${exerciseIndex}-${setIndex}">
-            <span class="set-label">Set ${setIndex + 1}</span>
-            <div><label class="field-label" for="weight-${exerciseIndex}-${setIndex}">Weight (kg)</label><input id="weight-${exerciseIndex}-${setIndex}" name="weight-${exerciseIndex}-${setIndex}" type="number" min="0" max="2000" step="0.25" value="" placeholder="e.g. 40" inputmode="decimal" aria-label="${escapeHTML(exercise.name)} set ${setIndex + 1} weight in kilograms"></div>
-            <div><label class="field-label" for="reps-${exerciseIndex}-${setIndex}">${isFinisher ? "Reps / side" : "Reps / duration"}</label><input id="reps-${exerciseIndex}-${setIndex}" name="reps-${exerciseIndex}-${setIndex}" type="number" min="0" max="1000" step="1" inputmode="numeric" placeholder="Completed" aria-label="${escapeHTML(exercise.name)} set ${setIndex + 1} completed reps or duration"></div>
-            <button type="button" class="set-rest-button" data-start-rest="${restSecondsFromText(exercise.rest)}" aria-label="Start ${escapeHTML(exercise.rest)} rest for ${escapeHTML(exercise.name)}">Rest ${restSecondsFromText(exercise.rest)}s</button>
-            <label class="set-check-label" for="done-${exerciseIndex}-${setIndex}"><input id="done-${exerciseIndex}-${setIndex}" name="done-${exerciseIndex}-${setIndex}" type="checkbox" aria-label="Mark ${escapeHTML(exercise.name)} set ${setIndex + 1} complete"><span>Done</span></label>
-          </div>`).join("")}
-      </div>`;
-  }).join("");
-  // Associate the generated controls with the workout form, even after their cards are mounted elsewhere.
-  container.querySelectorAll("input").forEach(input => input.setAttribute("form", "workoutLogForm"));
-  container.querySelectorAll("[data-log-exercise]").forEach(block => {
-    const exerciseIndex = Number(block.dataset.logExercise);
-    const exercise = day.exercises[exerciseIndex];
-    block.querySelectorAll(".set-row").forEach((row, setIndex) => {
-      const previous = previousSetPerformance(exercise.name, setIndex);
-      const label = document.createElement("span");
-      label.className = "previous-set-value";
-      label.innerHTML = `<small>PREV</small><strong>${previous ? `${formatDecimal(previous.weight)}kg × ${formatDecimal(previous.reps)}` : "—"}</strong>`;
-      const weightWrap = row.querySelector('input[name^="weight-"]')?.parentElement;
-      if (weightWrap) row.insertBefore(label, weightWrap);
-    });
+  day.exercises.forEach((exercise, exerciseIndex) => {
     const slot = document.querySelector(`[data-log-slot="${exerciseIndex}"]`);
-    if (slot) slot.appendChild(block);
+    if (!slot) return;
+    const isFinisher = exercise.name === "Delt + Triceps Finisher";
+    const restSecs = restSecondsFromText(exercise.rest);
+
+    const setsHtml = Array.from({ length: exercise.sets }, (_, setIndex) => {
+      const prev = previousSetPerformance(exercise.name, setIndex);
+      const prevText = prev ? `${formatDecimal(prev.weight)}kg × ${formatDecimal(prev.reps)}` : "—";
+
+      return `
+        <div class="set-row" data-set-row="${exerciseIndex}-${setIndex}">
+          <div class="set-row-top">
+            <div class="set-meta">
+              <span class="set-label">SET ${setIndex + 1}</span>
+              <span class="previous-set-value">
+                <small>PREV</small><strong>${prevText}</strong>
+              </span>
+            </div>
+            <div class="set-actions">
+              <button type="button" class="set-rest-button" data-start-rest="${restSecs}" aria-label="Start ${restSecs}s rest for ${escapeHTML(exercise.name)}">
+                ⏱ ${restSecs}s
+              </button>
+              <label class="set-check-label" for="done-${exerciseIndex}-${setIndex}">
+                <input id="done-${exerciseIndex}-${setIndex}" name="done-${exerciseIndex}-${setIndex}" type="checkbox" form="workoutLogForm" aria-label="Mark set ${setIndex + 1} complete">
+                <span class="set-check-box" aria-hidden="true"></span>
+                <span>Done</span>
+              </label>
+            </div>
+          </div>
+          <div class="set-row-bottom">
+            <div class="set-field">
+              <label class="field-label" for="weight-${exerciseIndex}-${setIndex}">Weight (kg)</label>
+              <input id="weight-${exerciseIndex}-${setIndex}" name="weight-${exerciseIndex}-${setIndex}" form="workoutLogForm" type="number" min="0" max="2000" step="0.25" placeholder="e.g. 40" inputmode="decimal" aria-label="${escapeHTML(exercise.name)} set ${setIndex + 1} weight">
+            </div>
+            <div class="set-field">
+              <label class="field-label" for="reps-${exerciseIndex}-${setIndex}">${isFinisher ? "Reps / side" : "Reps"}</label>
+              <input id="reps-${exerciseIndex}-${setIndex}" name="reps-${exerciseIndex}-${setIndex}" form="workoutLogForm" type="number" min="0" max="1000" step="1" placeholder="e.g. 10" inputmode="numeric" aria-label="${escapeHTML(exercise.name)} set ${setIndex + 1} reps">
+            </div>
+          </div>
+        </div>`;
+    }).join("");
+
+    slot.innerHTML = `
+      <div class="exercise-log-block" data-log-exercise="${exerciseIndex}">
+        ${setsHtml}
+      </div>`;
   });
+
   const exerciseList = document.getElementById("exerciseList");
   exerciseList.oninput = handleWorkoutDraftChange;
   exerciseList.onchange = handleWorkoutDraftChange;
-  exerciseList.onclick = event => {
-    const timerButton = event.target.closest("[data-start-rest]");
-    if (timerButton) {
-      startRestTimer(Number(timerButton.dataset.startRest));
-      return;
-    }
-    const toggle = event.target.closest("[data-exercise-toggle]");
-    if (!toggle) return;
-    const index = Number(toggle.dataset.exerciseToggle);
-    expandedExerciseIndex = index;
-    exerciseList.querySelectorAll("[data-exercise-card]").forEach(card => {
-      const expanded = Number(card.dataset.exerciseCard) === index;
-      card.classList.toggle("is-expanded", expanded);
-      const button = card.querySelector("[data-exercise-toggle]");
-      const body = card.querySelector("[data-exercise-body]");
-      if (button) {
-        button.setAttribute("aria-expanded", String(expanded));
-        const chevron = button.querySelector(".exercise-chevron");
-        if (chevron) chevron.textContent = expanded ? "⌃" : "⌄";
-      }
-      if (body) body.hidden = !expanded;
-    });
-  };
+  exerciseList.onclick = handleExerciseListClick;
+}
+
+function handleExerciseListClick(event) {
+  const timerButton = event.target.closest("[data-start-rest]");
+  if (timerButton) {
+    startRestTimer(Number(timerButton.dataset.startRest));
+    return;
+  }
+
+  const toggle = event.target.closest("[data-exercise-toggle]");
+  if (!toggle) return;
+  const index = Number(toggle.dataset.exerciseToggle);
+
+  expandedExerciseIndex = (expandedExerciseIndex === index) ? -1 : index;
+
+  document.querySelectorAll("#exerciseList [data-exercise-card]").forEach(card => {
+    const cardIndex = Number(card.dataset.exerciseCard);
+    const shouldExpand = cardIndex === expandedExerciseIndex;
+    card.classList.toggle("is-expanded", shouldExpand);
+    const btn = card.querySelector("[data-exercise-toggle]");
+    const body = card.querySelector("[data-exercise-body]");
+    const chevron = card.querySelector(".exercise-chevron");
+    if (btn) btn.setAttribute("aria-expanded", String(shouldExpand));
+    if (body) body.hidden = !shouldExpand;
+    if (chevron) chevron.textContent = shouldExpand ? "⌃" : "⌄";
+  });
 }
 
 function handleWorkoutDraftChange(event) {
-  if (event.target.matches("input")) {
+  if (event.target.matches('input[type="checkbox"]')) {
     const row = event.target.closest(".set-row");
-    if (row) row.classList.toggle("set-complete", Boolean(row.querySelector('input[type="checkbox"]').checked));
+    if (row) row.classList.toggle("set-complete", Boolean(event.target.checked));
   }
   saveWorkoutDraft();
   updateWorkoutProgress();
@@ -472,20 +574,25 @@ function restoreWorkoutDraft(day) {
 
 function saveWorkoutDraft() {
   if (!currentProgramId || currentDayNumber === null) return;
-  const form = document.getElementById("workoutLogForm");
   const draft = { notes: document.getElementById("workoutNotes").value, sets: {} };
   document.querySelectorAll("#exerciseList .set-row").forEach(row => {
     const weight = row.querySelector('input[name^="weight-"]');
     const reps = row.querySelector('input[name^="reps-"]');
     const done = row.querySelector('input[type="checkbox"]');
     const key = weight?.name.replace("weight-", "");
-    if (key) draft.sets[key] = { weight: weight.value, reps: reps.value, completed: done.checked };
+    if (key) {
+      draft.sets[key] = {
+        weight: weight.value,
+        reps: reps.value,
+        completed: Boolean(done?.checked)
+      };
+    }
   });
   workoutDrafts[draftKey()] = draft;
   if (writeStorage(STORAGE_KEYS.drafts, workoutDrafts)) {
     document.getElementById("workoutSaveHint").textContent = "Draft saved on this device";
   } else {
-    document.getElementById("workoutSaveHint").textContent = "Browser storage is unavailable";
+    document.getElementById("workoutSaveHint").textContent = "Browser storage unavailable";
   }
 }
 
@@ -499,33 +606,36 @@ function updateWorkoutProgress() {
   const completed = completedRows.length;
   const total = rows.length;
   const percent = total ? Math.round((completed / total) * 100) : 0;
+
   document.getElementById("workoutProgressText").textContent = `${completed} / ${total} sets`;
   document.getElementById("workoutProgressFill").style.width = `${percent}%`;
+
   const ring = document.getElementById("workoutProgressRing");
   if (ring) {
     ring.style.setProperty("--progress", `${percent}%`);
     ring.setAttribute("aria-label", `${percent} percent workout complete`);
     document.getElementById("workoutProgressPercent").textContent = `${percent}%`;
   }
+
   const progressBar = document.getElementById("workoutProgressBar");
   progressBar.setAttribute("aria-valuenow", String(percent));
   document.getElementById("workoutProgressHint").textContent = completed === total && total > 0
     ? "Every planned set is marked complete. Review your entries before saving."
     : `${percent}% complete · Tick a set after finishing it. Your draft is saved on this device.`;
-  document.querySelectorAll("#exerciseList [data-log-exercise]").forEach(block => {
-    const exerciseRows = [...block.querySelectorAll(".set-row")];
-    const doneCount = exerciseRows.filter(row => row.querySelector('input[type="checkbox"]').checked).length;
-    const progress = block.querySelector("[data-exercise-progress]");
-    progress.textContent = `${doneCount} / ${exerciseRows.length}`;
-    progress.style.color = doneCount === exerciseRows.length ? "var(--accent)" : "var(--muted)";
-    const card = block.closest("[data-exercise-card]");
-    if (card) {
-      card.classList.toggle("is-complete", doneCount === exerciseRows.length);
-      const summary = card.querySelector(`[data-card-summary="${block.dataset.logExercise}"]`);
-      const check = card.querySelector(".summary-check");
-      if (summary) summary.textContent = doneCount === exerciseRows.length ? "Completed" : `${doneCount} / ${exerciseRows.length} sets complete`;
-      if (check) check.textContent = doneCount === exerciseRows.length ? "✓" : "•";
+
+  document.querySelectorAll("#exerciseList .exercise-card").forEach(card => {
+    const index = Number(card.dataset.exerciseCard);
+    const cardRows = [...card.querySelectorAll(".set-row")];
+    const doneCount = cardRows.filter(row => row.querySelector('input[type="checkbox"]').checked).length;
+    card.classList.toggle("is-complete", doneCount === cardRows.length && cardRows.length > 0);
+    const summary = card.querySelector(`[data-card-summary="${index}"]`);
+    const check = card.querySelector(".summary-check");
+    if (summary) {
+      summary.textContent = (doneCount === cardRows.length && cardRows.length > 0)
+        ? "Completed"
+        : `${doneCount} / ${cardRows.length} sets complete`;
     }
+    if (check) check.textContent = (doneCount === cardRows.length && cardRows.length > 0) ? "✓" : "•";
   });
 }
 
@@ -550,6 +660,7 @@ document.getElementById("workoutLogForm").addEventListener("submit", event => {
   }));
   const completedSets = exercises.flatMap(exercise => exercise.sets).filter(set => set.completed);
   const message = document.getElementById("workoutLogMessage");
+
   if (!completedSets.length) {
     message.textContent = "Mark at least one completed set before saving this workout.";
     message.style.color = "var(--danger)";
@@ -570,9 +681,15 @@ document.getElementById("workoutLogForm").addEventListener("submit", event => {
     message.style.color = "var(--danger)";
     return;
   }
+
   const log = {
-    id: makeId(), date: todayString(), programId: program.id, programName: program.name,
-    day: day.day, dayTitle: day.title, exercises,
+    id: makeId(),
+    date: todayString(),
+    programId: program.id,
+    programName: program.name,
+    day: day.day,
+    dayTitle: day.title,
+    exercises,
     completedSetCount: completedSets.length,
     totalSetCount: exercises.reduce((sum, exercise) => sum + exercise.sets.length, 0),
     notes: document.getElementById("workoutNotes").value.trim()
@@ -587,8 +704,9 @@ document.getElementById("workoutLogForm").addEventListener("submit", event => {
   }
   delete workoutDrafts[draftKey()];
   writeStorage(STORAGE_KEYS.drafts, workoutDrafts);
-  message.textContent = `Workout saved: ${completedSets.length} completed set${completedSets.length === 1 ? "" : "s"}. Progress is updated.`;
+  message.textContent = `Workout saved: ${completedSets.length} completed set${completedSets.length === 1 ? "" : "s"}. Progress updated!`;
   message.style.color = "var(--accent)";
+
   document.querySelectorAll("#exerciseList .set-row").forEach(row => {
     row.querySelector('input[name^="weight-"]').value = "";
     row.querySelector('input[name^="reps-"]').value = "";
@@ -596,7 +714,7 @@ document.getElementById("workoutLogForm").addEventListener("submit", event => {
     row.classList.remove("set-complete");
   });
   document.getElementById("workoutNotes").value = "";
-  // Rebuild cards so the just-saved performance becomes the visible “previous” set.
+
   renderExercises(day);
   renderWorkoutLogger(day);
   restoreWorkoutDraft(day);
@@ -625,7 +743,7 @@ function startRestTimer(seconds = 90) {
   clearInterval(restTimerInterval);
   restTimerRemaining = requestedSeconds;
   restTimerEndsAt = Date.now() + requestedSeconds * 1000;
-  document.getElementById("restTimerStatus").textContent = "Rest timer running. Breathe and get ready for your next set.";
+  document.getElementById("restTimerStatus").textContent = "Rest running. Breathe and get ready for your next set.";
   updateRestTimerDisplay();
   restTimerInterval = window.setInterval(() => {
     restTimerRemaining = Math.max(0, Math.ceil((restTimerEndsAt - Date.now()) / 1000));
@@ -634,7 +752,7 @@ function startRestTimer(seconds = 90) {
       clearInterval(restTimerInterval);
       restTimerInterval = null;
       restTimerEndsAt = 0;
-      document.getElementById("restTimerStatus").textContent = "Rest complete — get ready for the next set.";
+      document.getElementById("restTimerStatus").textContent = "Rest complete — get ready for the next set!";
       updateRestTimerDisplay();
     }
   }, 250);
@@ -648,7 +766,9 @@ function stopRestTimer(showStatus = true) {
   document.getElementById("restTimerDisplay").classList.remove("timer-running");
 }
 
-document.getElementById("startRestButton").addEventListener("click", () => startRestTimer(restTimerRemaining > 0 ? restTimerRemaining : 90));
+document.getElementById("startRestButton").addEventListener("click", () =>
+  startRestTimer(restTimerRemaining > 0 ? restTimerRemaining : 90)
+);
 document.getElementById("addRestButton").addEventListener("click", () => {
   if (restTimerInterval) {
     restTimerEndsAt += 15000;
@@ -666,7 +786,9 @@ document.getElementById("skipRestButton").addEventListener("click", () => {
   updateRestTimerDisplay();
 });
 
-/* Built-in generic food composition starter list. Values are approximate per 100 g edible portion. */
+/* =========================================================
+   7. FOOD DATABASE & PORTION CALCULATION
+========================================================= */
 const FOOD_DATABASE = [
   {id:"oats-dry",name:"Oats, dry",category:"Grains",aliases:"rolled oats porridge breakfast",kcal:389,protein:16.9,carbs:66.3,fat:6.9,fiber:10.6,note:"Dry weight"},
   {id:"rice-white-cooked",name:"White rice, cooked",category:"Grains",aliases:"steamed rice chawal",kcal:130,protein:2.7,carbs:28.2,fat:0.3,fiber:0.4,note:"Cooked without oil"},
@@ -676,20 +798,20 @@ const FOOD_DATABASE = [
   {id:"poha-dry",name:"Poha, dry",category:"Grains",aliases:"flattened rice aval",kcal:350,protein:7,carbs:77,fat:1,fiber:3,note:"Before cooking; oil not included"},
   {id:"whole-egg-boiled",name:"Whole egg, boiled",category:"Protein",aliases:"egg anda boiled egg",kcal:148,protein:13.4,carbs:1.1,fat:10.5,fiber:0,note:"Edible portion, shell removed"},
   {id:"egg-white-boiled",name:"Egg white, boiled",category:"Protein",aliases:"egg whites anda white",kcal:52,protein:10.9,carbs:0.7,fat:0.2,fiber:0,note:"Cooked white only"},
-  {id:"chicken-breast-raw",name:"Chicken breast, skinless raw",category:"Protein",aliases:"chicken breast non veg",kcal:168,protein:21.8,carbs:0,fat:9,fiber:0,note:"Raw weight; use raw weight consistently"},
-  {id:"chicken-breast-cooked",name:"Chicken breast, cooked",category:"Protein",aliases:"grilled boiled chicken",kcal:165,protein:31,carbs:0,fat:3.6,fiber:0,note:"Cooked, skinless, no added oil; estimate"},
-  {id:"paneer",name:"Paneer, regular",category:"Dairy",aliases:"cottage cheese paneer",kcal:305,protein:18.9,carbs:2.4,fat:24.8,fiber:0,note:"Generic regular paneer; brands differ"},
+  {id:"chicken-breast-raw",name:"Chicken breast, skinless raw",category:"Protein",aliases:"chicken breast non veg",kcal:168,protein:21.8,carbs:0,fat:9,fiber:0,note:"Raw weight"},
+  {id:"chicken-breast-cooked",name:"Chicken breast, cooked",category:"Protein",aliases:"grilled boiled chicken",kcal:165,protein:31,carbs:0,fat:3.6,fiber:0,note:"Cooked, skinless, no added oil"},
+  {id:"paneer",name:"Paneer, regular",category:"Dairy",aliases:"cottage cheese paneer",kcal:305,protein:18.9,carbs:2.4,fat:24.8,fiber:0,note:"Generic regular paneer"},
   {id:"milk-cow",name:"Cow milk, whole",category:"Dairy",aliases:"milk full fat",kcal:73,protein:3.3,carbs:4.9,fat:4.5,fiber:0,note:"Generic whole cow milk"},
-  {id:"milk-toned",name:"Toned cow milk",category:"Dairy",aliases:"toned milk low fat",kcal:58,protein:3.1,carbs:4.8,fat:3,fiber:0,note:"Estimate; check your pack label"},
+  {id:"milk-toned",name:"Toned cow milk",category:"Dairy",aliases:"toned milk low fat",kcal:58,protein:3.1,carbs:4.8,fat:3,fiber:0,note:"Estimate; check pack label"},
   {id:"milk-buffalo",name:"Buffalo milk, whole",category:"Dairy",aliases:"buffalo doodh",kcal:107,protein:3.7,carbs:8.4,fat:6.6,fiber:0,note:"Generic whole buffalo milk"},
-  {id:"curd",name:"Plain curd (dahi)",category:"Dairy",aliases:"yogurt yoghurt dahi",kcal:61,protein:3.5,carbs:4.7,fat:3.3,fiber:0,note:"Plain full-fat curd; varies by milk"},
+  {id:"curd",name:"Plain curd (dahi)",category:"Dairy",aliases:"yogurt yoghurt dahi",kcal:61,protein:3.5,carbs:4.7,fat:3.3,fiber:0,note:"Plain full-fat curd"},
   {id:"tofu",name:"Tofu, firm",category:"Protein",aliases:"soy paneer tofu",kcal:76,protein:8,carbs:1.9,fat:4.8,fiber:0.3,note:"Generic firm tofu"},
   {id:"soya-chunks-dry",name:"Soya chunks, dry",category:"Protein",aliases:"soy nuggets soya nuggets",kcal:345,protein:52,carbs:33,fat:0.5,fiber:13,note:"Dry weight before soaking"},
-  {id:"whey-powder",name:"Whey protein powder, generic",category:"Other",aliases:"whey protein supplement protein powder",kcal:400,protein:80,carbs:8,fat:6,fiber:1,note:"Generic estimate only; use brand label for accuracy"},
-  {id:"moong-dal-cooked",name:"Moong dal, cooked",category:"Pulses",aliases:"green gram yellow dal",kcal:105,protein:7,carbs:19,fat:0.4,fiber:7,note:"Cooked plain; tadka/oil not included"},
-  {id:"toor-dal-cooked",name:"Toor dal, cooked",category:"Pulses",aliases:"arhar dal pigeon pea",kcal:120,protein:7,carbs:20,fat:1.5,fiber:6,note:"Cooked plain; tadka/oil not included"},
+  {id:"whey-powder",name:"Whey protein powder",category:"Other",aliases:"whey protein supplement protein powder",kcal:400,protein:80,carbs:8,fat:6,fiber:1,note:"Generic estimate; verify pack label"},
+  {id:"moong-dal-cooked",name:"Moong dal, cooked",category:"Pulses",aliases:"green gram yellow dal",kcal:105,protein:7,carbs:19,fat:0.4,fiber:7,note:"Cooked plain; tadka not included"},
+  {id:"toor-dal-cooked",name:"Toor dal, cooked",category:"Pulses",aliases:"arhar dal pigeon pea",kcal:120,protein:7,carbs:20,fat:1.5,fiber:6,note:"Cooked plain"},
   {id:"chickpeas-cooked",name:"Chickpeas, cooked",category:"Pulses",aliases:"chana chole kabuli chana",kcal:164,protein:8.9,carbs:27.4,fat:2.6,fiber:7.6,note:"Boiled and drained"},
-  {id:"rajma-cooked",name:"Rajma, cooked",category:"Pulses",aliases:"kidney beans",kcal:127,protein:8.7,carbs:22.8,fat:0.5,fiber:6.4,note:"Boiled beans; gravy/oil not included"},
+  {id:"rajma-cooked",name:"Rajma, cooked",category:"Pulses",aliases:"kidney beans",kcal:127,protein:8.7,carbs:22.8,fat:0.5,fiber:6.4,note:"Boiled beans"},
   {id:"besan",name:"Besan (gram flour), dry",category:"Pulses",aliases:"chickpea flour",kcal:387,protein:22,carbs:58,fat:6.7,fiber:10,note:"Dry flour before cooking"},
   {id:"banana",name:"Banana",category:"Fruit",aliases:"kela",kcal:89,protein:1.1,carbs:22.8,fat:0.3,fiber:2.6,note:"Edible portion, peel removed"},
   {id:"apple",name:"Apple",category:"Fruit",aliases:"seb",kcal:52,protein:0.3,carbs:13.8,fat:0.2,fiber:2.4,note:"Raw edible portion"},
@@ -697,42 +819,73 @@ const FOOD_DATABASE = [
   {id:"potato-boiled",name:"Potato, boiled",category:"Vegetables",aliases:"aloo",kcal:87,protein:1.9,carbs:20.1,fat:0.1,fiber:1.8,note:"Boiled without butter/oil"},
   {id:"sweet-potato-boiled",name:"Sweet potato, boiled",category:"Vegetables",aliases:"shakarkandi",kcal:76,protein:1.4,carbs:17.7,fat:0.1,fiber:2.5,note:"Boiled without added fat"},
   {id:"spinach-cooked",name:"Spinach, cooked",category:"Vegetables",aliases:"palak",kcal:23,protein:3,carbs:3.8,fat:0.3,fiber:2.4,note:"Cooked without oil"},
-  {id:"peanuts",name:"Peanuts, roasted",category:"Nuts & Seeds",aliases:"groundnuts moongphali",kcal:585,protein:24.4,carbs:21.3,fat:49.7,fiber:8.4,note:"Roasted; salted brands may differ"},
+  {id:"peanuts",name:"Peanuts, roasted",category:"Nuts & Seeds",aliases:"groundnuts moongphali",kcal:585,protein:24.4,carbs:21.3,fat:49.7,fiber:8.4,note:"Roasted kernels"},
   {id:"almonds",name:"Almonds",category:"Nuts & Seeds",aliases:"badam",kcal:579,protein:21.2,carbs:21.6,fat:49.9,fiber:12.5,note:"Raw, unsalted"},
   {id:"walnuts",name:"Walnuts",category:"Nuts & Seeds",aliases:"akhrot",kcal:654,protein:15.2,carbs:13.7,fat:65.2,fiber:6.7,note:"Raw kernels"},
-  {id:"ghee",name:"Ghee",category:"Other",aliases:"clarified butter",kcal:900,protein:0,carbs:0,fat:100,fiber:0,note:"Pure ghee; measure carefully"},
-  {id:"cooking-oil",name:"Cooking oil",category:"Other",aliases:"oil sunflower groundnut olive",kcal:900,protein:0,carbs:0,fat:100,fiber:0,note:"Generic oil; all oil added to cooking counts"},
+  {id:"ghee",name:"Ghee",category:"Other",aliases:"clarified butter",kcal:900,protein:0,carbs:0,fat:100,fiber:0,note:"Pure ghee"},
+  {id:"cooking-oil",name:"Cooking oil",category:"Other",aliases:"oil sunflower groundnut olive",kcal:900,protein:0,carbs:0,fat:100,fiber:0,note:"Generic oil"},
   {id:"sugar",name:"Sugar",category:"Other",aliases:"white sugar",kcal:387,protein:0,carbs:100,fat:0,fiber:0,note:"Dry sugar"}
 ];
 let selectedFoodId = null;
 
-function foodForId(id) { return FOOD_DATABASE.find(food => food.id === id) || null; }
+function foodForId(id) {
+  return FOOD_DATABASE.find(food => food.id === id) || null;
+}
+
 function getFoodMacros(food, grams) {
   const factor = Math.max(0, numberValue(grams)) / 100;
-  return { calories: food.kcal * factor, protein: food.protein * factor, carbs: food.carbs * factor, fat: food.fat * factor, fiber: food.fiber * factor };
+  return {
+    calories: food.kcal * factor,
+    protein: food.protein * factor,
+    carbs: food.carbs * factor,
+    fat: food.fat * factor,
+    fiber: food.fiber * factor
+  };
 }
+
 function renderFoodDatabase() {
   const search = document.getElementById("foodSearch").value.trim().toLowerCase();
   const category = document.getElementById("foodCategory").value;
-  const foods = FOOD_DATABASE.filter(food => (category === "all" || food.category === category) && `${food.name} ${food.aliases} ${food.category}`.toLowerCase().includes(search));
+  const foods = FOOD_DATABASE.filter(food =>
+    (category === "all" || food.category === category) &&
+    `${food.name} ${food.aliases} ${food.category}`.toLowerCase().includes(search)
+  );
   const grid = document.getElementById("foodDatabaseGrid");
   document.getElementById("foodResultCount").textContent = `${foods.length} food${foods.length === 1 ? "" : "s"}`;
   document.getElementById("foodNoResults").classList.toggle("hidden", foods.length > 0);
-  grid.innerHTML = foods.map(food => `<button type="button" class="food-option ${food.id === selectedFoodId ? "selected" : ""}" data-select-food="${escapeHTML(food.id)}" aria-pressed="${food.id === selectedFoodId}">
-    <span class="food-option-top"><span><strong>${escapeHTML(food.name)}</strong><span class="food-category">${escapeHTML(food.category)} · per 100 g</span></span><span class="food-kcal">${Math.round(food.kcal)} kcal</span></span>
-    <span class="food-macros"><span>P <b>${formatDecimal(food.protein)}</b></span><span>C <b>${formatDecimal(food.carbs)}</b></span><span>F <b>${formatDecimal(food.fat)}</b></span></span></button>`).join("");
-  grid.querySelectorAll("[data-select-food]").forEach(button => button.addEventListener("click", () => selectFood(button.dataset.selectFood)));
+
+  grid.innerHTML = foods.map(food => `
+    <button type="button" class="food-option ${food.id === selectedFoodId ? "selected" : ""}" data-select-food="${escapeHTML(food.id)}" aria-pressed="${food.id === selectedFoodId}">
+      <span class="food-option-top">
+        <span>
+          <strong>${escapeHTML(food.name)}</strong>
+          <span class="food-category">${escapeHTML(food.category)} · 100g</span>
+        </span>
+        <span class="food-kcal">${Math.round(food.kcal)} kcal</span>
+      </span>
+      <span class="food-macros">
+        <span>P <b>${formatDecimal(food.protein)}</b></span>
+        <span>C <b>${formatDecimal(food.carbs)}</b></span>
+        <span>F <b>${formatDecimal(food.fat)}</b></span>
+      </span>
+    </button>`).join("");
+  grid.querySelectorAll("[data-select-food]").forEach(button =>
+    button.addEventListener("click", () => selectFood(button.dataset.selectFood))
+  );
 }
+
 function selectFood(foodId) {
   const food = foodForId(foodId);
   if (!food) return;
   selectedFoodId = foodId;
   document.getElementById("selectedFoodPanel").classList.remove("hidden");
   document.getElementById("selectedFoodName").textContent = food.name;
-  document.getElementById("selectedFoodServing").textContent = `${food.note} · nutrition values per 100 g`;
+  document.getElementById("selectedFoodServing").textContent = `${food.note} · nutrition per 100 g`;
   document.getElementById("foodAmount").value = "100";
-  renderFoodDatabase(); updateSelectedFoodPreview();
+  renderFoodDatabase();
+  updateSelectedFoodPreview();
 }
+
 function updateSelectedFoodPreview() {
   const food = foodForId(selectedFoodId);
   if (!food) return;
@@ -745,85 +898,155 @@ function updateSelectedFoodPreview() {
   document.getElementById("previewFiber").textContent = `${formatDecimal(m.fiber)} g`;
   document.getElementById("foodCalculationHint").textContent = `Calculated for ${grams} g. ${food.note}.`;
 }
+
 function addSelectedFoodToDiary() {
   const food = foodForId(selectedFoodId);
   const grams = numberValue(document.getElementById("foodAmount").value);
   if (!food || grams <= 0 || grams > 5000) return;
   const macros = getFoodMacros(food, grams);
-  const entry = { id: makeId(), date: todayString(), foodId: food.id, name: food.name, meal: document.getElementById("foodMealType").value, amount: grams,
-    calories: Math.round(macros.calories), protein: roundMacro(macros.protein), carbs: roundMacro(macros.carbs), fat: roundMacro(macros.fat), fiber: roundMacro(macros.fiber), source: "database" };
+  const entry = {
+    id: makeId(),
+    date: todayString(),
+    foodId: food.id,
+    name: food.name,
+    meal: document.getElementById("foodMealType").value,
+    amount: grams,
+    calories: Math.round(macros.calories),
+    protein: roundMacro(macros.protein),
+    carbs: roundMacro(macros.carbs),
+    fat: roundMacro(macros.fat),
+    fiber: roundMacro(macros.fiber),
+    source: "database"
+  };
   foodEntries.push(entry);
-  if (!writeStorage(STORAGE_KEYS.food, foodEntries)) { foodEntries.pop(); return; }
-  renderFood(); renderDashboard();
+  if (!writeStorage(STORAGE_KEYS.food, foodEntries)) {
+    foodEntries.pop();
+    return;
+  }
+  renderFood();
+  renderDashboard();
   document.getElementById("selectedFoodPanel").classList.add("hidden");
   document.getElementById("foodSearch").focus();
 }
-function roundMacro(value) { return Math.round(value * 10) / 10; }
+
+function roundMacro(value) {
+  return Math.round(value * 10) / 10;
+}
+
 document.getElementById("foodSearch").addEventListener("input", renderFoodDatabase);
 document.getElementById("foodCategory").addEventListener("change", renderFoodDatabase);
 document.getElementById("foodAmount").addEventListener("input", updateSelectedFoodPreview);
-document.getElementById("closeSelectedFood").addEventListener("click", () => document.getElementById("selectedFoodPanel").classList.add("hidden"));
+document.getElementById("closeSelectedFood").addEventListener("click", () =>
+  document.getElementById("selectedFoodPanel").classList.add("hidden")
+);
 document.getElementById("addSelectedFood").addEventListener("click", addSelectedFoodToDiary);
 
 /* =========================================================
-   7. FOOD DIARY
+   8. CUSTOM FOOD AND DIARY LIST
 ========================================================= */
 document.getElementById("foodForm").addEventListener("submit", event => {
   event.preventDefault();
   const entry = {
-    id: makeId(), date: todayString(), name: document.getElementById("foodName").value.trim(),
+    id: makeId(),
+    date: todayString(),
+    name: document.getElementById("foodName").value.trim(),
     meal: document.getElementById("customFoodMeal").value,
     calories: numberValue(document.getElementById("foodCalories").value),
     protein: numberValue(document.getElementById("foodProtein").value),
     carbs: numberValue(document.getElementById("foodCarbs").value),
     fat: numberValue(document.getElementById("foodFat").value),
-    fiber: numberValue(document.getElementById("foodFiber").value), source: "custom"
+    fiber: numberValue(document.getElementById("foodFiber").value),
+    source: "custom"
   };
   if (!entry.name) return;
   foodEntries.push(entry);
-  if (!writeStorage(STORAGE_KEYS.food, foodEntries)) { foodEntries.pop(); return; }
+  if (!writeStorage(STORAGE_KEYS.food, foodEntries)) {
+    foodEntries.pop();
+    return;
+  }
   event.currentTarget.reset();
-  renderFood(); renderDashboard();
+  renderFood();
+  renderDashboard();
 });
 
 function renderFood() {
   const today = todayString();
   const entries = foodEntries.filter(entry => entry.date === today);
   const sum = field => entries.reduce((total, entry) => total + numberValue(entry[field]), 0);
-  const totals = { calories: sum("calories"), protein: sum("protein"), carbs: sum("carbs"), fat: sum("fat"), fiber: sum("fiber") };
+  const totals = {
+    calories: sum("calories"),
+    protein: sum("protein"),
+    carbs: sum("carbs"),
+    fat: sum("fat"),
+    fiber: sum("fiber")
+  };
+
   document.getElementById("foodCaloriesTotal").textContent = Math.round(totals.calories).toLocaleString("en-IN");
   document.getElementById("foodProteinTotal").textContent = formatDecimal(totals.protein);
   document.getElementById("foodCarbsTotal").textContent = formatDecimal(totals.carbs);
   document.getElementById("foodFatTotal").textContent = formatDecimal(totals.fat);
   document.getElementById("foodFiberTotal").textContent = formatDecimal(totals.fiber);
-  document.getElementById("foodWaterTotal").textContent = waterEntries.filter(entry => entry.date === today).reduce((total, entry) => total + numberValue(entry.amount), 0);
+  document.getElementById("foodWaterTotal").textContent = waterEntries
+    .filter(entry => entry.date === today)
+    .reduce((total, entry) => total + numberValue(entry.amount), 0);
   document.getElementById("foodDateLabel").textContent = formatDate(today);
-  // Small progress bars are visual summaries, not dietary targets.
-  const barConfig = [["foodCaloriesTrack",totals.calories,2500],["foodProteinTrack",totals.protein,120],["foodCarbsTrack",totals.carbs,300],["foodFatTrack",totals.fat,80],["foodFiberTrack",totals.fiber,30]];
-  barConfig.forEach(([id,value,max]) => { const el=document.getElementById(id); if(el) el.style.width=`${Math.min(100,Math.max(0,value/max*100))}%`; });
+
+  const barConfig = [
+    ["foodCaloriesTrack", totals.calories, 2500],
+    ["foodProteinTrack", totals.protein, 120],
+    ["foodCarbsTrack", totals.carbs, 300],
+    ["foodFatTrack", totals.fat, 80],
+    ["foodFiberTrack", totals.fiber, 30]
+  ];
+  barConfig.forEach(([id, value, max]) => {
+    const el = document.getElementById(id);
+    if (el) el.style.width = `${Math.min(100, Math.max(0, (value / max) * 100))}%`;
+  });
+
   const list = document.getElementById("foodList");
   if (!entries.length) {
     list.innerHTML = `<div class="empty-state">No meals logged today. Search the built-in food list above to add your first entry.</div>`;
     return;
   }
-  const mealOrder = ["Breakfast","Lunch","Snacks","Post-workout","Dinner"];
   const sortedEntries = entries.slice().reverse();
   list.innerHTML = sortedEntries.map(entry => {
-    const portion = entry.amount ? `${numberValue(entry.amount)} g` : "Custom serving";
-    return `<div class="entry-row food-entry-row"><div class="entry-copy food-entry-copy">
-      <div class="food-entry-top"><div><div class="food-entry-title"><strong>${escapeHTML(entry.name)}</strong><span class="meal-badge">${escapeHTML(entry.meal || "Meal")}</span></div><span class="food-entry-amount">${portion}${entry.source === "database" ? " · calculated from food database" : " · custom entry"}</span></div></div>
-      <div class="food-entry-macros"><span>${Math.round(numberValue(entry.calories))} kcal</span><span>P ${formatDecimal(numberValue(entry.protein))} g</span><span>C ${formatDecimal(numberValue(entry.carbs))} g</span><span>F ${formatDecimal(numberValue(entry.fat))} g</span><span>Fibre ${formatDecimal(numberValue(entry.fiber))} g</span></div>
-    </div><button class="delete-button" data-delete-food="${escapeHTML(entry.id)}">Delete</button></div>`;
+    const portion = entry.amount ? `${numberValue(entry.amount)} g` : "Custom portion";
+    return `
+      <div class="entry-row food-entry-row">
+        <div class="entry-copy food-entry-copy">
+          <div class="food-entry-top">
+            <div>
+              <div class="food-entry-title">
+                <strong>${escapeHTML(entry.name)}</strong>
+                <span class="meal-badge">${escapeHTML(entry.meal || "Meal")}</span>
+              </div>
+              <span class="food-entry-amount">${portion}${entry.source === "database" ? " · calculated from database" : " · custom entry"}</span>
+            </div>
+          </div>
+          <div class="food-entry-macros">
+            <span>${Math.round(numberValue(entry.calories))} kcal</span>
+            <span>P ${formatDecimal(numberValue(entry.protein))}g</span>
+            <span>C ${formatDecimal(numberValue(entry.carbs))}g</span>
+            <span>F ${formatDecimal(numberValue(entry.fat))}g</span>
+            <span>Fibre ${formatDecimal(numberValue(entry.fiber))}g</span>
+          </div>
+        </div>
+        <button class="delete-button" data-delete-food="${escapeHTML(entry.id)}" aria-label="Delete ${escapeHTML(entry.name)}">Delete</button>
+      </div>`;
   }).join("");
-  list.querySelectorAll("[data-delete-food]").forEach(button => button.addEventListener("click", () => {
-    foodEntries = foodEntries.filter(entry => entry.id !== button.dataset.deleteFood);
-    writeStorage(STORAGE_KEYS.food, foodEntries);
-    renderFood(); renderDashboard();
-  }));
+
+  list.querySelectorAll("[data-delete-food]").forEach(button =>
+    button.addEventListener("click", () => {
+      foodEntries = foodEntries.filter(entry => entry.id !== button.dataset.deleteFood);
+      writeStorage(STORAGE_KEYS.food, foodEntries);
+      renderFood();
+      renderDashboard();
+    })
+  );
 }
 
 /* =========================================================
-   8. WATER TRACKER
+   9. WATER TRACKER
 ========================================================= */
 function addWater() {
   waterEntries.push({ id: makeId(), date: todayString(), amount: 250 });
@@ -831,13 +1054,14 @@ function addWater() {
     waterEntries.pop();
     return;
   }
-  renderFood(); renderDashboard();
+  renderFood();
+  renderDashboard();
 }
 document.getElementById("addWaterButton").addEventListener("click", addWater);
 document.getElementById("dashboardWaterButton").addEventListener("click", addWater);
 
 /* =========================================================
-   9. BODY WEIGHT TRACKER
+   10. BODY WEIGHT TRACKER
 ========================================================= */
 document.getElementById("weightDate").value = todayString();
 document.getElementById("weightForm").addEventListener("submit", event => {
@@ -853,7 +1077,8 @@ document.getElementById("weightForm").addEventListener("submit", event => {
     return;
   }
   document.getElementById("weightValue").value = "";
-  renderWeight(); renderDashboard();
+  renderWeight();
+  renderDashboard();
 });
 
 function renderWeight() {
@@ -864,16 +1089,27 @@ function renderWeight() {
     return;
   }
   container.innerHTML = sorted.map(entry => `
-    <div class="entry-row"><div class="entry-copy"><strong>${formatDate(entry.date)}</strong><span>Body-weight measurement</span></div><div class="entry-value">${numberValue(entry.weight).toFixed(1)} kg</div><button class="delete-button" data-delete-weight="${escapeHTML(entry.id)}">Delete</button></div>`).join("");
-  container.querySelectorAll("[data-delete-weight]").forEach(button => button.addEventListener("click", () => {
-    bodyWeights = bodyWeights.filter(entry => entry.id !== button.dataset.deleteWeight);
-    writeStorage(STORAGE_KEYS.weight, bodyWeights);
-    renderWeight(); renderDashboard();
-  }));
+    <div class="entry-row">
+      <div class="entry-copy">
+        <strong>${formatDate(entry.date)}</strong>
+        <span>Body-weight measurement</span>
+      </div>
+      <div class="entry-value">${numberValue(entry.weight).toFixed(1)} kg</div>
+      <button class="delete-button" data-delete-weight="${escapeHTML(entry.id)}" aria-label="Delete entry">Delete</button>
+    </div>`).join("");
+
+  container.querySelectorAll("[data-delete-weight]").forEach(button =>
+    button.addEventListener("click", () => {
+      bodyWeights = bodyWeights.filter(entry => entry.id !== button.dataset.deleteWeight);
+      writeStorage(STORAGE_KEYS.weight, bodyWeights);
+      renderWeight();
+      renderDashboard();
+    })
+  );
 }
 
 /* =========================================================
-   10. PROGRESS CHART
+   11. PROGRESS CHART
 ========================================================= */
 function getLoggedExerciseNames() {
   const names = new Set();
@@ -882,7 +1118,6 @@ function getLoggedExerciseNames() {
 }
 
 function isCompletedSet(set) {
-  // Logs created by the older version do not have `completed`; retain those entries.
   return set.completed !== false && numberValue(set.reps) > 0;
 }
 
@@ -891,16 +1126,22 @@ function renderProgress() {
   const metricSelect = document.getElementById("progressMetric");
   const previousSelection = exerciseSelect.value;
   const names = getLoggedExerciseNames();
+
   exerciseSelect.innerHTML = names.length
     ? names.map(name => `<option value="${escapeHTML(name)}">${escapeHTML(name)}</option>`).join("")
     : `<option value="">No logged exercises yet</option>`;
+
   if (names.includes(previousSelection)) exerciseSelect.value = previousSelection;
   exerciseSelect.disabled = names.length === 0;
   drawProgressChart(exerciseSelect.value, metricSelect.value);
 }
 
-document.getElementById("progressExercise").addEventListener("change", () => drawProgressChart(document.getElementById("progressExercise").value, document.getElementById("progressMetric").value));
-document.getElementById("progressMetric").addEventListener("change", () => drawProgressChart(document.getElementById("progressExercise").value, document.getElementById("progressMetric").value));
+document.getElementById("progressExercise").addEventListener("change", () =>
+  drawProgressChart(document.getElementById("progressExercise").value, document.getElementById("progressMetric").value)
+);
+document.getElementById("progressMetric").addEventListener("change", () =>
+  drawProgressChart(document.getElementById("progressExercise").value, document.getElementById("progressMetric").value)
+);
 
 function drawProgressChart(exerciseName, metric) {
   const chart = document.getElementById("progressChart");
@@ -911,7 +1152,9 @@ function drawProgressChart(exerciseName, metric) {
     renderProgressHistory();
     return;
   }
-  const sessions = workoutLogs.filter(log => (log.exercises || []).some(exercise => exercise.name === exerciseName)).map(log => {
+  const sessions = workoutLogs.filter(log =>
+    (log.exercises || []).some(exercise => exercise.name === exerciseName)
+  ).map(log => {
     const exercise = log.exercises.find(item => item.name === exerciseName);
     const validSets = (exercise?.sets || []).filter(isCompletedSet);
     const value = metric === "weight"
@@ -931,40 +1174,49 @@ function drawProgressChart(exerciseName, metric) {
   const latest = sessions[sessions.length - 1].value;
   const unit = metric === "weight" ? "kg" : "reps";
   const change = latest - first;
-  summary.textContent = `Best: ${formatDecimal(best)} ${unit} · Latest: ${formatDecimal(latest)} ${unit} · Change from first logged session: ${change > 0 ? "+" : ""}${formatDecimal(change)} ${unit}`;
+  summary.textContent = `Best: ${formatDecimal(best)} ${unit} · Latest: ${formatDecimal(latest)} ${unit} · Change: ${change > 0 ? "+" : ""}${formatDecimal(change)} ${unit}`;
 
-  const width = 720, height = 245, paddingLeft = 42, paddingRight = 22, paddingTop = 24, paddingBottom = 42;
+  const width = 720, height = 245, paddingLeft = 40, paddingRight = 20, paddingTop = 24, paddingBottom = 40;
   const chartWidth = width - paddingLeft - paddingRight;
   const chartHeight = height - paddingTop - paddingBottom;
   const maxValue = Math.max(...sessions.map(session => session.value), 1);
   const yMax = maxValue * 1.15;
+
   const points = sessions.map((session, index) => {
     const x = sessions.length === 1 ? paddingLeft + chartWidth / 2 : paddingLeft + (index / (sessions.length - 1)) * chartWidth;
     const y = paddingTop + chartHeight - (session.value / yMax) * chartHeight;
     return { ...session, x, y };
   });
+
   const grid = Array.from({ length: 5 }, (_, index) => {
     const y = paddingTop + (index / 4) * chartHeight;
     const value = yMax - (index / 4) * yMax;
-    return `<line x1="${paddingLeft}" y1="${y}" x2="${width - paddingRight}" y2="${y}" stroke="#30363d" stroke-dasharray="4 5"/><text x="${paddingLeft - 8}" y="${y + 4}" text-anchor="end" fill="#a2ada0" font-size="10">${value.toFixed(0)}</text>`;
+    return `<line x1="${paddingLeft}" y1="${y}" x2="${width - paddingRight}" y2="${y}" stroke="#252932" stroke-dasharray="3 4"/><text x="${paddingLeft - 8}" y="${y + 4}" text-anchor="end" fill="#808896" font-size="10">${value.toFixed(0)}</text>`;
   }).join("");
+
   const linePoints = points.map(point => `${point.x},${point.y}`).join(" ");
-  const dots = points.map(point => `<circle cx="${point.x}" cy="${point.y}" r="4.5" fill="#00DDF5" stroke="#091216" stroke-width="2"><title>${escapeHTML(formatDate(point.date))}: ${formatDecimal(point.value)} ${unit}</title></circle>`).join("");
+  const dots = points.map(point =>
+    `<circle cx="${point.x}" cy="${point.y}" r="4.5" fill="#00DDF5" stroke="#090A0C" stroke-width="2"><title>${escapeHTML(formatDate(point.date))}: ${formatDecimal(point.value)} ${unit}</title></circle>`
+  ).join("");
   const labels = points.map((point, index) => {
     if (points.length > 7 && index % 2 !== 0 && index !== points.length - 1) return "";
-    return `<text x="${point.x}" y="${height - 15}" text-anchor="middle" fill="#a2ada0" font-size="10">${escapeHTML(point.date.slice(5))}</text>`;
+    return `<text x="${point.x}" y="${height - 14}" text-anchor="middle" fill="#808896" font-size="10">${escapeHTML(point.date.slice(5))}</text>`;
   }).join("");
+
   chart.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Progress chart for ${escapeHTML(exerciseName)}">${grid}<polyline points="${linePoints}" fill="none" stroke="#00DDF5" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>${dots}${labels}</svg>`;
   renderProgressHistory();
 }
 
 /* =========================================================
-   11. WORKOUT HISTORY
+   12. WORKOUT HISTORY
 ========================================================= */
 function renderProgressHistory() {
   const container = document.getElementById("progressHistory");
   const selectedExercise = document.getElementById("progressExercise").value;
-  const matchingLogs = workoutLogs.filter(log => !selectedExercise || (log.exercises || []).some(exercise => exercise.name === selectedExercise)).slice().sort((a, b) => b.date.localeCompare(a.date));
+  const matchingLogs = workoutLogs.filter(log =>
+    !selectedExercise || (log.exercises || []).some(exercise => exercise.name === selectedExercise)
+  ).slice().sort((a, b) => b.date.localeCompare(a.date));
+
   if (!matchingLogs.length) {
     container.innerHTML = `<div class="empty-state">Saved workout sessions will appear here.</div>`;
     return;
@@ -977,21 +1229,34 @@ function renderProgressHistory() {
       const maxWeight = Math.max(0, ...valid.map(set => numberValue(set.weight)));
       const maxReps = Math.max(0, ...valid.map(set => numberValue(set.reps)));
       const count = valid.length;
-      return `${exercise.name}: ${maxWeight} kg × ${maxReps} reps (${count} completed)`;
+      return `${exercise.name}: ${maxWeight}kg × ${maxReps} reps (${count} sets)`;
     }).join(" · ");
     const completeCount = log.completedSetCount ?? (log.exercises || []).flatMap(exercise => exercise.sets || []).filter(isCompletedSet).length;
-    return `<div class="entry-row"><div class="entry-copy"><strong>${escapeHTML(log.dayTitle || "Workout")} · ${formatDate(log.date)}</strong><span>${escapeHTML(log.programName || "Training")} · ${completeCount} completed sets</span><span>${escapeHTML(summary)}</span>${log.notes ? `<span>Notes: ${escapeHTML(log.notes)}</span>` : ""}</div><button class="delete-button" data-delete-workout="${escapeHTML(log.id)}">Delete</button></div>`;
+
+    return `
+      <div class="entry-row">
+        <div class="entry-copy">
+          <strong>${escapeHTML(log.dayTitle || "Workout")} · ${formatDate(log.date)}</strong>
+          <span>${escapeHTML(log.programName || "Training")} · ${completeCount} completed sets</span>
+          <span>${escapeHTML(summary)}</span>
+          ${log.notes ? `<span>Notes: ${escapeHTML(log.notes)}</span>` : ""}
+        </div>
+        <button class="delete-button" data-delete-workout="${escapeHTML(log.id)}" aria-label="Delete workout record">Delete</button>
+      </div>`;
   }).join("");
-  container.querySelectorAll("[data-delete-workout]").forEach(button => button.addEventListener("click", () => {
-    workoutLogs = workoutLogs.filter(log => log.id !== button.dataset.deleteWorkout);
-    writeStorage(STORAGE_KEYS.workouts, workoutLogs);
-    renderDashboard();
-    renderProgress();
-  }));
+
+  container.querySelectorAll("[data-delete-workout]").forEach(button =>
+    button.addEventListener("click", () => {
+      workoutLogs = workoutLogs.filter(log => log.id !== button.dataset.deleteWorkout);
+      writeStorage(STORAGE_KEYS.workouts, workoutLogs);
+      renderDashboard();
+      renderProgress();
+    })
+  );
 }
 
 /* =========================================================
-   12. DASHBOARD
+   13. DASHBOARD
 ========================================================= */
 function renderDashboard() {
   const today = todayString();
@@ -1000,21 +1265,31 @@ function renderDashboard() {
   const protein = todayFoods.reduce((sum, entry) => sum + numberValue(entry.protein), 0);
   const water = waterEntries.filter(entry => entry.date === today).reduce((sum, entry) => sum + numberValue(entry.amount), 0);
   const latestWeight = bodyWeights.slice().sort((a, b) => b.date.localeCompare(a.date))[0];
+
   document.getElementById("dashboardCalories").textContent = Math.round(calories);
   document.getElementById("dashboardProtein").textContent = formatDecimal(protein);
   document.getElementById("dashboardWater").textContent = water;
   document.getElementById("dashboardWeight").textContent = latestWeight ? numberValue(latestWeight.weight).toFixed(1) : "—";
+
   const recent = document.getElementById("recentWorkoutLogs");
   const logs = workoutLogs.slice().sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4);
   if (!logs.length) {
     recent.innerHTML = `<div class="empty-state">No workouts logged yet. Choose a program and save your first session.</div>`;
     return;
   }
-  recent.innerHTML = logs.map(log => `<div class="entry-row"><div class="entry-copy"><strong>${escapeHTML(log.dayTitle || "Workout")}</strong><span>${escapeHTML(log.programName || "Training")} · ${formatDate(log.date)}</span><span>${log.completedSetCount ?? (log.exercises || []).flatMap(exercise => exercise.sets || []).filter(isCompletedSet).length} completed sets</span></div><div class="entry-value">${(log.exercises || []).length}<small>exercises</small></div></div>`).join("");
+  recent.innerHTML = logs.map(log => `
+    <div class="entry-row">
+      <div class="entry-copy">
+        <strong>${escapeHTML(log.dayTitle || "Workout")}</strong>
+        <span>${escapeHTML(log.programName || "Training")} · ${formatDate(log.date)}</span>
+        <span>${log.completedSetCount ?? (log.exercises || []).flatMap(exercise => exercise.sets || []).filter(isCompletedSet).length} completed sets</span>
+      </div>
+      <div class="entry-value">${(log.exercises || []).length}<small>exercises</small></div>
+    </div>`).join("");
 }
 
 /* =========================================================
-   13. INITIALIZE APP
+   14. INITIALIZE APP
 ========================================================= */
 function initializeApp() {
   renderPrograms();
