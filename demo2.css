@@ -307,3 +307,56 @@ input:focus, select:focus, textarea:focus { border-color: #00aabb; outline: none
 @media(max-width:1100px){.macro-summary-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.food-database-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.macro-preview-grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
 @media(max-width:760px){.macro-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.macro-summary-card{padding:13px}.macro-summary-card strong{font-size:20px}.food-search-row{grid-template-columns:1fr}.food-database-grid{grid-template-columns:1fr 1fr}.food-option{padding:11px}.food-option strong{font-size:11px}.macro-preview-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.portion-controls{grid-template-columns:1fr 1fr}.selected-food-actions{align-items:stretch;flex-direction:column}.selected-food-actions .primary-button{width:100%}}
 @media(max-width:430px){.food-database-grid{grid-template-columns:1fr}.macro-preview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.portion-controls{grid-template-columns:1fr}.food-database-heading{flex-direction:column}.database-count{align-self:flex-start}}
+
+/* FitTrack mobile responsiveness */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  overflow-x: hidden;
+}
+
+img,
+canvas {
+  max-width: 100%;
+}
+
+input,
+select,
+textarea {
+  max-width: 100%;
+}
+
+@media (max-width: 600px) {
+  .set-log {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    width: 100%;
+    min-width: 0;
+    padding: 16px;
+  }
+
+  .set-log > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .set-log input,
+  .set-log select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  button {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+}
