@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#090A0C">
   <meta name="description" content="FitTrack fitness and nutrition tracker">
   <title>FitTrack | Fitness & Nutrition</title>
@@ -11,21 +11,31 @@
 </head>
 
 <body>
+  <!-- Overlay backdrop for mobile drawer navigation -->
+  <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
+
   <div class="app-layout">
-    <aside class="sidebar" id="sidebar">
-      <a class="brand" href="#dashboard" data-go="dashboard" aria-label="FitTrack dashboard">
-        <span class="brand-icon">F</span><span>FitTrack<span class="brand-dot">.</span></span>
-      </a>
+    <aside class="sidebar" id="sidebar" aria-label="Main sidebar navigation">
+      <div class="sidebar-header">
+        <a class="brand" href="#dashboard" data-go="dashboard" aria-label="FitTrack dashboard">
+          <span class="brand-icon">F</span><span>FitTrack<span class="brand-dot">.</span></span>
+        </a>
+        <button class="sidebar-close-button" id="sidebarCloseButton" aria-label="Close navigation menu">✕</button>
+      </div>
+
       <p class="nav-label">WORKSPACE</p>
       <nav class="navigation" aria-label="Main navigation">
-        <button class="nav-link active" data-page="dashboard"><span aria-hidden="true">◫</span> Dashboard</button>
-        <button class="nav-link" data-page="workouts"><span aria-hidden="true">↗</span> Workouts</button>
-        <button class="nav-link" data-page="food"><span aria-hidden="true">◉</span> Food diary</button>
-        <button class="nav-link" data-page="weight"><span aria-hidden="true">⚖</span> Body weight</button>
-        <button class="nav-link" data-page="progress"><span aria-hidden="true">⌁</span> Progress</button>
+        <button class="nav-link active" data-page="dashboard"><span class="nav-icon" aria-hidden="true">◫</span> Dashboard</button>
+        <button class="nav-link" data-page="workouts"><span class="nav-icon" aria-hidden="true">↗</span> Workouts</button>
+        <button class="nav-link" data-page="food"><span class="nav-icon" aria-hidden="true">◉</span> Food diary</button>
+        <button class="nav-link" data-page="weight"><span class="nav-icon" aria-hidden="true">⚖</span> Body weight</button>
+        <button class="nav-link" data-page="progress"><span class="nav-icon" aria-hidden="true">⌁</span> Progress</button>
       </nav>
+
       <div class="sidebar-bottom">
-        <div class="sidebar-note"><span class="note-icon" aria-hidden="true">✦</span><strong>Consistency wins.</strong>
+        <div class="sidebar-note">
+          <span class="note-icon" aria-hidden="true">✦</span>
+          <strong>Consistency wins.</strong>
           <p>Train with purpose. Track your progress.</p>
         </div>
         <p class="sidebar-footer">FITTRACK · YOUR FITNESS SPACE</p>
@@ -34,21 +44,28 @@
 
     <main class="main-content">
       <header class="topbar">
-        <button class="menu-button" id="menuButton" aria-label="Toggle navigation" aria-expanded="false">☰</button>
-        <div>
+        <button class="menu-button" id="menuButton" aria-label="Open navigation menu" aria-expanded="false">
+          <span class="menu-bar"></span>
+          <span class="menu-bar"></span>
+          <span class="menu-bar"></span>
+        </button>
+        <div class="topbar-title-wrap">
           <p class="topbar-eyebrow">YOUR PERSONAL FITNESS SPACE</p>
           <h1 id="pageTitle">Dashboard</h1>
         </div>
-        <div class="topbar-date" id="todayLabel"></div>
+        <div class="topbar-date" id="todayLabel">Today</div>
       </header>
 
       <!-- DASHBOARD -->
       <section class="page-section active-page" id="dashboard">
         <div class="welcome-banner">
-          <div><span class="eyebrow">YOUR JOURNEY, YOUR RULES</span>
+          <div class="welcome-banner-content">
+            <span class="eyebrow">YOUR JOURNEY, YOUR RULES</span>
             <h2>Build strength.<br>Track every win.</h2>
-            <p>Your training, nutrition and progress in one place.</p><button class="primary-button"
-              data-go="workouts">Explore workouts <span aria-hidden="true">↗</span></button>
+            <p>Your training, nutrition and progress in one place.</p>
+            <button class="primary-button" data-go="workouts">
+              Explore workouts <span aria-hidden="true">↗</span>
+            </button>
           </div>
           <div class="banner-art" aria-hidden="true">
             <div class="art-ring"></div>
@@ -56,51 +73,73 @@
             <div class="art-caption">SHOW UP<br>EVERY DAY</div>
           </div>
         </div>
+
         <div class="section-heading">
-          <div><span class="eyebrow">TODAY AT A GLANCE</span>
+          <div>
+            <span class="eyebrow">TODAY AT A GLANCE</span>
             <h2>Your daily overview</h2>
           </div>
         </div>
+
         <div class="stats-grid">
-          <article class="stat-card"><span class="stat-icon">◉</span>
+          <article class="stat-card">
+            <span class="stat-icon">◉</span>
             <p>Calories logged</p>
-            <h3><span id="dashboardCalories">0</span> <small>kcal</small></h3><span class="stat-caption">From your food
-              diary</span>
+            <h3><span id="dashboardCalories">0</span> <small>kcal</small></h3>
+            <span class="stat-caption">From your food diary</span>
           </article>
-          <article class="stat-card"><span class="stat-icon">⌁</span>
+          <article class="stat-card">
+            <span class="stat-icon">⌁</span>
             <p>Protein logged</p>
-            <h3><span id="dashboardProtein">0</span> <small>g</small></h3><span class="stat-caption">Daily protein
-              intake</span>
+            <h3><span id="dashboardProtein">0</span> <small>g</small></h3>
+            <span class="stat-caption">Daily protein intake</span>
           </article>
-          <article class="stat-card"><span class="stat-icon">♧</span>
+          <article class="stat-card">
+            <span class="stat-icon">♧</span>
             <p>Water logged</p>
-            <h3><span id="dashboardWater">0</span> <small>ml</small></h3><span class="stat-caption">Today's water
-              intake</span>
+            <h3><span id="dashboardWater">0</span> <small>ml</small></h3>
+            <span class="stat-caption">Today's water intake</span>
           </article>
-          <article class="stat-card"><span class="stat-icon">↗</span>
+          <article class="stat-card">
+            <span class="stat-icon">↗</span>
             <p>Latest body weight</p>
-            <h3><span id="dashboardWeight">—</span> <small>kg</small></h3><span class="stat-caption">Most recent
-              entry</span>
+            <h3><span id="dashboardWeight">—</span> <small>kg</small></h3>
+            <span class="stat-caption">Most recent entry</span>
           </article>
         </div>
+
         <div class="dashboard-columns">
           <article class="panel">
             <div class="section-heading compact">
-              <div><span class="eyebrow">TRAINING</span>
+              <div>
+                <span class="eyebrow">TRAINING</span>
                 <h2>Recent workouts</h2>
-              </div><button class="text-button" data-go="progress">View progress ↗</button>
+              </div>
+              <button class="text-button" data-go="progress">View progress ↗</button>
             </div>
-            <div id="recentWorkoutLogs" class="empty-state">No workouts logged yet. Complete a session to see it here.
+            <div id="recentWorkoutLogs" class="empty-state">
+              No workouts logged yet. Complete a session to see it here.
             </div>
           </article>
-          <article class="panel quick-panel"><span class="eyebrow">QUICK ACTIONS</span>
+
+          <article class="panel quick-panel">
+            <span class="eyebrow">QUICK ACTIONS</span>
             <h2>Keep your routine moving</h2>
-            <button class="quick-action" data-go="food"><span>◉</span><span><strong>Log a meal</strong><small>Track
-                  calories and protein</small></span><b>→</b></button>
-            <button class="quick-action" id="dashboardWaterButton"><span>♧</span><span><strong>Drink
-                  water</strong><small>Add 250 ml to today's total</small></span><b>+</b></button>
-            <button class="quick-action" data-go="weight"><span>⚖</span><span><strong>Log body
-                  weight</strong><small>Record today's measurement</small></span><b>→</b></button>
+            <button class="quick-action" data-go="food">
+              <span>◉</span>
+              <span><strong>Log a meal</strong><small>Track calories and protein</small></span>
+              <b>→</b>
+            </button>
+            <button class="quick-action" id="dashboardWaterButton">
+              <span>♧</span>
+              <span><strong>Drink water</strong><small>Add 250 ml to today's total</small></span>
+              <b>+</b>
+            </button>
+            <button class="quick-action" data-go="weight">
+              <span>⚖</span>
+              <span><strong>Log body weight</strong><small>Record today's measurement</small></span>
+              <b>→</b>
+            </button>
           </article>
         </div>
       </section>
@@ -108,80 +147,113 @@
       <!-- WORKOUTS -->
       <section class="page-section" id="workouts">
         <div id="programList">
-          <div class="page-intro"><span class="eyebrow">TRAIN WITH A PLAN</span>
+          <div class="page-intro">
+            <span class="eyebrow">TRAIN WITH A PLAN</span>
             <h2>Choose your program</h2>
             <p>Select a training program to view its workout days and exercises.</p>
           </div>
           <div class="program-grid" id="programGrid"></div>
         </div>
-        <div id="dayView" class="hidden"><button class="back-button" id="backToPrograms">← All programs</button>
-          <div class="page-intro"><span class="eyebrow">YOUR TRAINING PLAN</span>
+
+        <div id="dayView" class="hidden">
+          <button class="back-button" id="backToPrograms">← All programs</button>
+          <div class="page-intro">
+            <span class="eyebrow">YOUR TRAINING PLAN</span>
             <h2 id="selectedProgramTitle"></h2>
             <p id="selectedProgramDescription"></p>
           </div>
           <div id="dayGrid" class="day-grid"></div>
         </div>
+
         <div id="workoutDetail" class="hidden">
           <button class="back-button" id="backToDays">← Back to workout days</button>
-          <div class="workout-heading"><span class="eyebrow" id="workoutSubtitle"></span>
+          <div class="workout-heading">
+            <span class="eyebrow" id="workoutSubtitle"></span>
             <h2 id="workoutTitle"></h2>
             <p id="workoutDescription"></p>
           </div>
 
+          <!-- Active Session Progress Panel -->
           <article class="panel session-progress-panel" aria-labelledby="sessionProgressTitle">
             <div class="session-progress-top">
-              <div><span class="eyebrow">ACTIVE SESSION</span>
-                <h3 id="sessionProgressTitle">Workout progress</h3><strong id="workoutProgressText">0 / 0 sets</strong>
+              <div class="session-progress-info">
+                <span class="eyebrow">ACTIVE SESSION</span>
+                <h3 id="sessionProgressTitle">Workout progress</h3>
+                <strong id="workoutProgressText">0 / 0 sets</strong>
               </div>
               <div class="workout-progress-ring" id="workoutProgressRing" role="img"
-                aria-label="0 percent workout complete" style="--progress: 0%"><span
-                  id="workoutProgressPercent">0%</span></div>
+                aria-label="0 percent workout complete" style="--progress: 0%">
+                <span id="workoutProgressPercent">0%</span>
+              </div>
             </div>
             <div class="progress-track" role="progressbar" id="workoutProgressBar" aria-label="Workout set completion"
-              aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="workoutProgressFill"></span></div>
-            <p class="muted" id="workoutProgressHint">Tick a set when you finish it. Your draft is saved on this device.
+              aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <span id="workoutProgressFill"></span>
+            </div>
+            <p class="muted" id="workoutProgressHint">
+              Tick a set when you finish it. Your draft is saved on this device.
             </p>
           </article>
 
+          <!-- Rest Timer Panel -->
           <article class="panel rest-timer-panel" aria-labelledby="restTimerTitle">
-            <div class="timer-copy"><span class="eyebrow">RECOVERY BETWEEN SETS</span>
+            <div class="timer-copy">
+              <span class="eyebrow">RECOVERY BETWEEN SETS</span>
               <h3 id="restTimerTitle">Rest timer</h3>
               <p id="restTimerStatus" class="muted" aria-live="polite">Ready when you are.</p>
             </div>
-            <div class="timer-display" id="restTimerDisplay" aria-live="off">01:30</div>
-            <div class="timer-controls"><button type="button" class="secondary-button"
-                id="startRestButton">Start</button><button type="button" class="secondary-button" id="addRestButton">+15
-                sec</button><button type="button" class="secondary-button" id="skipRestButton">Skip</button></div>
+            <div class="timer-display-wrap">
+              <div class="timer-display" id="restTimerDisplay" aria-live="off">01:30</div>
+            </div>
+            <div class="timer-controls">
+              <button type="button" class="secondary-button" id="startRestButton">Start</button>
+              <button type="button" class="secondary-button" id="addRestButton">+15 sec</button>
+              <button type="button" class="secondary-button" id="skipRestButton">Skip</button>
+            </div>
           </article>
 
           <div class="section-heading">
-            <div><span class="eyebrow">YOUR EXERCISES</span>
+            <div>
+              <span class="eyebrow">YOUR EXERCISES</span>
               <h2>Workout plan</h2>
-            </div><span class="exercise-count" id="exerciseCount"></span>
+            </div>
+            <span class="exercise-count" id="exerciseCount"></span>
           </div>
+
+          <!-- Exercise List with Interactive Set-by-Set Logging Cards -->
           <div id="exerciseList" class="exercise-list"></div>
-          <article class="recovery-card"><span class="recovery-icon" aria-hidden="true">✦</span>
+
+          <article class="recovery-card">
+            <span class="recovery-icon" aria-hidden="true">✦</span>
             <div>
               <h3>Recovery matters</h3>
-              <p id="recoveryContent">Control your technique, follow your rest periods and recover well between
-                sessions.</p>
+              <p id="recoveryContent">
+                Control your technique, follow your rest periods and recover well between sessions.
+              </p>
             </div>
           </article>
+
+          <!-- Workout Submission and Session Notes -->
           <article class="panel logging-panel">
             <div class="section-heading compact">
-              <div><span class="eyebrow">RECORD YOUR SESSION</span>
-                <h2>Log each set</h2>
+              <div>
+                <span class="eyebrow">RECORD YOUR SESSION</span>
+                <h2>Complete session</h2>
               </div>
             </div>
-            <p class="muted">Enter your actual weight and reps, then tick each set after completing it. Incomplete sets
-              are not counted in your progress chart.</p>
+            <p class="muted">
+              Enter your actual weight and reps in the exercises above, then tick each completed set. Tap below to save the workout to your history.
+            </p>
             <form id="workoutLogForm" novalidate>
-              <div id="workoutLogInputs"></div><label class="field-label" for="workoutNotes">Session notes
-                (optional)</label><textarea id="workoutNotes" rows="3" maxlength="1000"
-                placeholder="How did the workout feel?"></textarea>
-              <div class="workout-submit-row"><button class="primary-button" type="submit">Save completed workout <span
-                    aria-hidden="true">↗</span></button><span class="muted" id="workoutSaveHint">Saved locally on this
-                  device</span></div>
+              <div id="workoutLogInputs" class="hidden-inputs-host" aria-hidden="true"></div>
+              <label class="field-label" for="workoutNotes">Session notes (optional)</label>
+              <textarea id="workoutNotes" rows="3" maxlength="1000" placeholder="How did the workout feel?"></textarea>
+              <div class="workout-submit-row">
+                <button class="primary-button" type="submit">
+                  Save completed workout <span aria-hidden="true">↗</span>
+                </button>
+                <span class="muted" id="workoutSaveHint">Saved locally on this device</span>
+              </div>
               <p class="form-message" id="workoutLogMessage" role="status" aria-live="polite"></p>
             </form>
           </article>
@@ -197,42 +269,55 @@
         </div>
 
         <div class="macro-summary-grid">
-          <article class="macro-summary-card calorie-card"><span>Calories</span><strong><span
-                id="foodCaloriesTotal">0</span> <small>kcal</small></strong>
+          <article class="macro-summary-card calorie-card">
+            <span>Calories</span>
+            <strong><span id="foodCaloriesTotal">0</span> <small>kcal</small></strong>
             <div class="macro-mini-track"><i id="foodCaloriesTrack"></i></div>
           </article>
-          <article class="macro-summary-card"><span>Protein</span><strong><span id="foodProteinTotal">0</span>
-              <small>g</small></strong>
+          <article class="macro-summary-card">
+            <span>Protein</span>
+            <strong><span id="foodProteinTotal">0</span> <small>g</small></strong>
             <div class="macro-mini-track"><i id="foodProteinTrack"></i></div>
           </article>
-          <article class="macro-summary-card"><span>Carbs</span><strong><span id="foodCarbsTotal">0</span>
-              <small>g</small></strong>
+          <article class="macro-summary-card">
+            <span>Carbs</span>
+            <strong><span id="foodCarbsTotal">0</span> <small>g</small></strong>
             <div class="macro-mini-track"><i id="foodCarbsTrack"></i></div>
           </article>
-          <article class="macro-summary-card"><span>Fat</span><strong><span id="foodFatTotal">0</span>
-              <small>g</small></strong>
+          <article class="macro-summary-card">
+            <span>Fat</span>
+            <strong><span id="foodFatTotal">0</span> <small>g</small></strong>
             <div class="macro-mini-track"><i id="foodFatTrack"></i></div>
           </article>
-          <article class="macro-summary-card"><span>Fibre</span><strong><span id="foodFiberTotal">0</span>
-              <small>g</small></strong>
+          <article class="macro-summary-card">
+            <span>Fibre</span>
+            <strong><span id="foodFiberTotal">0</span> <small>g</small></strong>
             <div class="macro-mini-track"><i id="foodFiberTrack"></i></div>
           </article>
         </div>
-        <p class="nutrition-disclaimer">Food values are approximate per 100 g edible portion. Actual macros vary by
-          variety, brand, recipe, cooking method and added oil. Use the package label for branded products.</p>
+
+        <p class="nutrition-disclaimer">
+          Food values are approximate per 100 g edible portion. Actual macros vary by variety, brand, recipe, cooking method and added oil. Use the package label for branded products.
+        </p>
 
         <article class="panel food-database-panel">
           <div class="section-heading food-database-heading">
-            <div><span class="eyebrow">BUILT-IN FOOD DATABASE</span>
+            <div>
+              <span class="eyebrow">BUILT-IN FOOD DATABASE</span>
               <h2>What did you eat?</h2>
               <p class="muted">Choose a food to calculate its macros by weight.</p>
             </div>
             <span class="database-count" id="foodResultCount">0 foods</span>
           </div>
+
           <div class="food-search-row">
-            <label class="food-search-box" for="foodSearch"><span aria-hidden="true">⌕</span><input id="foodSearch"
-                type="search" placeholder="Search egg, paneer, rice, oats..." autocomplete="off"></label>
-            <label class="category-select-label" for="foodCategory"><span>Category</span><select id="foodCategory">
+            <label class="food-search-box" for="foodSearch">
+              <span aria-hidden="true">⌕</span>
+              <input id="foodSearch" type="search" placeholder="Search egg, paneer, rice, oats..." autocomplete="off">
+            </label>
+            <label class="category-select-label" for="foodCategory">
+              <span>Category</span>
+              <select id="foodCategory">
                 <option value="all">All foods</option>
                 <option value="Protein">Protein</option>
                 <option value="Dairy">Dairy</option>
@@ -242,32 +327,41 @@
                 <option value="Vegetables">Vegetables</option>
                 <option value="Nuts & Seeds">Nuts &amp; Seeds</option>
                 <option value="Other">Other</option>
-              </select></label>
+              </select>
+            </label>
           </div>
+
           <div id="foodDatabaseGrid" class="food-database-grid"></div>
-          <div id="foodNoResults" class="empty-state hidden">No matching foods. Try a shorter search or add it as a
-            custom food below.</div>
+          <div id="foodNoResults" class="empty-state hidden">
+            No matching foods. Try a shorter search or add it as a custom food below.
+          </div>
         </article>
 
         <article id="selectedFoodPanel" class="panel selected-food-panel hidden" aria-live="polite">
           <div class="selected-food-header">
-            <div><span class="eyebrow">ADD TO TODAY'S DIARY</span>
+            <div>
+              <span class="eyebrow">ADD TO TODAY'S DIARY</span>
               <h2 id="selectedFoodName">Selected food</h2>
               <p class="muted" id="selectedFoodServing">Values per 100 g</p>
-            </div><button type="button" class="icon-button" id="closeSelectedFood"
-              aria-label="Close food selection">×</button>
+            </div>
+            <button type="button" class="icon-button" id="closeSelectedFood" aria-label="Close food selection">×</button>
           </div>
+
           <div class="portion-controls">
-            <label for="foodAmount">Amount eaten (grams)<input id="foodAmount" type="number" min="1" max="5000" step="1"
-                value="100"></label>
-            <label for="foodMealType">Meal<select id="foodMealType">
+            <label for="foodAmount">Amount eaten (grams)
+              <input id="foodAmount" type="number" min="1" max="5000" step="1" value="100" inputmode="numeric">
+            </label>
+            <label for="foodMealType">Meal
+              <select id="foodMealType">
                 <option>Breakfast</option>
                 <option>Lunch</option>
                 <option>Snacks</option>
                 <option>Dinner</option>
                 <option>Post-workout</option>
-              </select></label>
+              </select>
+            </label>
           </div>
+
           <div class="macro-preview-grid">
             <div><span>Calories</span><strong id="previewCalories">0 kcal</strong></div>
             <div><span>Protein</span><strong id="previewProtein">0 g</strong></div>
@@ -275,79 +369,114 @@
             <div><span>Fat</span><strong id="previewFat">0 g</strong></div>
             <div><span>Fibre</span><strong id="previewFiber">0 g</strong></div>
           </div>
+
           <div class="selected-food-actions">
-            <p class="muted" id="foodCalculationHint">Calculated from the selected food's per-100 g values.</p><button
-              type="button" class="primary-button" id="addSelectedFood">Add to diary +</button>
+            <p class="muted" id="foodCalculationHint">Calculated from the selected food's per-100 g values.</p>
+            <button type="button" class="primary-button" id="addSelectedFood">Add to diary +</button>
           </div>
         </article>
 
         <details class="panel custom-food-details">
-          <summary><span><strong>Can't find your food?</strong><small>Add a custom or branded food using its nutrition
-                label.</small></span><span class="details-chevron">＋</span></summary>
+          <summary>
+            <span>
+              <strong>Can't find your food?</strong>
+              <small>Add a custom or branded food using its nutrition label.</small>
+            </span>
+            <span class="details-chevron">＋</span>
+          </summary>
           <form id="foodForm" class="form-grid custom-food-form">
-            <div class="field"><label for="foodName">Food / meal name</label><input id="foodName" required
-                maxlength="100" placeholder="e.g. Your whey brand, 1 scoop"></div>
-            <div class="field"><label for="customFoodMeal">Meal</label><select id="customFoodMeal">
+            <div class="field">
+              <label for="foodName">Food / meal name</label>
+              <input id="foodName" required maxlength="100" placeholder="e.g. Your whey brand, 1 scoop">
+            </div>
+            <div class="field">
+              <label for="customFoodMeal">Meal</label>
+              <select id="customFoodMeal">
                 <option>Breakfast</option>
                 <option>Lunch</option>
                 <option>Snacks</option>
                 <option>Dinner</option>
                 <option>Post-workout</option>
-              </select></div>
-            <div class="field"><label for="foodCalories">Calories (kcal)</label><input id="foodCalories" type="number"
-                min="0" max="10000" step="1" required placeholder="From label"></div>
-            <div class="field"><label for="foodProtein">Protein (g)</label><input id="foodProtein" type="number" min="0"
-                max="1000" step="0.1" required placeholder="From label"></div>
-            <div class="field"><label for="foodCarbs">Carbs (g)</label><input id="foodCarbs" type="number" min="0"
-                max="1000" step="0.1" value="0" required></div>
-            <div class="field"><label for="foodFat">Fat (g)</label><input id="foodFat" type="number" min="0" max="1000"
-                step="0.1" value="0" required></div>
-            <div class="field"><label for="foodFiber">Fibre (g)</label><input id="foodFiber" type="number" min="0"
-                max="1000" step="0.1" value="0" required></div>
+              </select>
+            </div>
+            <div class="field">
+              <label for="foodCalories">Calories (kcal)</label>
+              <input id="foodCalories" type="number" min="0" max="10000" step="1" required placeholder="From label" inputmode="numeric">
+            </div>
+            <div class="field">
+              <label for="foodProtein">Protein (g)</label>
+              <input id="foodProtein" type="number" min="0" max="1000" step="0.1" required placeholder="From label" inputmode="decimal">
+            </div>
+            <div class="field">
+              <label for="foodCarbs">Carbs (g)</label>
+              <input id="foodCarbs" type="number" min="0" max="1000" step="0.1" value="0" required inputmode="decimal">
+            </div>
+            <div class="field">
+              <label for="foodFat">Fat (g)</label>
+              <input id="foodFat" type="number" min="0" max="1000" step="0.1" value="0" required inputmode="decimal">
+            </div>
+            <div class="field">
+              <label for="foodFiber">Fibre (g)</label>
+              <input id="foodFiber" type="number" min="0" max="1000" step="0.1" value="0" required inputmode="decimal">
+            </div>
             <button class="primary-button" type="submit">Save custom food +</button>
           </form>
         </details>
 
         <article class="panel section-panel">
           <div class="section-heading compact">
-            <div><span class="eyebrow">TODAY'S INTAKE</span>
+            <div>
+              <span class="eyebrow">TODAY'S INTAKE</span>
               <h2>Today's meals</h2>
-            </div><span class="muted" id="foodDateLabel"></span>
+            </div>
+            <span class="muted" id="foodDateLabel"></span>
           </div>
           <div id="foodList" class="entry-list"></div>
         </article>
 
         <article class="panel water-panel">
-          <div><span class="eyebrow">HYDRATION</span>
+          <div>
+            <span class="eyebrow">HYDRATION</span>
             <h2>Water tracker</h2>
             <p class="muted">Each tap records 250 ml of water.</p>
           </div>
-          <div class="water-total"><strong id="foodWaterTotal">0</strong><span>ml today</span></div><button
-            class="primary-button" id="addWaterButton" type="button">+ Add 250 ml</button>
+          <div class="water-total">
+            <strong id="foodWaterTotal">0</strong>
+            <span>ml today</span>
+          </div>
+          <button class="primary-button" id="addWaterButton" type="button">+ Add 250 ml</button>
         </article>
-        <p class="nutrition-source">Nutrition reference: <a href="https://www.nin.res.in/ebooks/IFCT2017.pdf"
-            target="_blank" rel="noopener noreferrer">ICMR–NIN Indian Food Composition Tables 2017</a>. The built-in
-          list is a starter database of generic foods, not a brand-specific or clinical nutrition database.</p>
+
+        <p class="nutrition-source">
+          Nutrition reference: <a href="https://www.nin.res.in/ebooks/IFCT2017.pdf" target="_blank" rel="noopener noreferrer">ICMR–NIN Indian Food Composition Tables 2017</a>. The built-in list is a starter database of generic foods, not a brand-specific or clinical nutrition database.
+        </p>
       </section>
 
       <!-- BODY WEIGHT -->
       <section class="page-section" id="weight">
-        <div class="page-intro"><span class="eyebrow">BODY METRICS</span>
+        <div class="page-intro">
+          <span class="eyebrow">BODY METRICS</span>
           <h2>Body weight</h2>
           <p>Record measurements consistently to understand your longer-term trend.</p>
         </div>
         <article class="panel">
           <h2>Add measurement</h2>
           <form id="weightForm" class="form-grid">
-            <div class="field"><label for="weightDate">Date</label><input id="weightDate" type="date" required></div>
-            <div class="field"><label for="weightValue">Weight (kg)</label><input id="weightValue" type="number" min="1"
-                max="500" step="0.1" required placeholder="e.g. 55.5"></div><button class="primary-button"
-              type="submit">Save weight +</button>
+            <div class="field">
+              <label for="weightDate">Date</label>
+              <input id="weightDate" type="date" required>
+            </div>
+            <div class="field">
+              <label for="weightValue">Weight (kg)</label>
+              <input id="weightValue" type="number" min="1" max="500" step="0.1" required placeholder="e.g. 55.5" inputmode="decimal">
+            </div>
+            <button class="primary-button" type="submit">Save weight +</button>
           </form>
         </article>
         <article class="panel section-panel">
           <div class="section-heading compact">
-            <h2>Weight history</h2><span class="muted">Newest first</span>
+            <h2>Weight history</h2>
+            <span class="muted">Newest first</span>
           </div>
           <div id="weightHistory" class="entry-list"></div>
         </article>
@@ -355,32 +484,64 @@
 
       <!-- PROGRESS -->
       <section class="page-section" id="progress">
-        <div class="page-intro"><span class="eyebrow">YOUR TRAINING DATA</span>
+        <div class="page-intro">
+          <span class="eyebrow">YOUR TRAINING DATA</span>
           <h2>Progress</h2>
           <p>Compare completed-set performance across your workout sessions.</p>
         </div>
         <article class="panel">
           <div class="progress-controls">
-            <div class="field"><label for="progressExercise">Exercise</label><select id="progressExercise"></select>
+            <div class="field">
+              <label for="progressExercise">Exercise</label>
+              <select id="progressExercise"></select>
             </div>
-            <div class="field"><label for="progressMetric">Metric</label><select id="progressMetric">
+            <div class="field">
+              <label for="progressMetric">Metric</label>
+              <select id="progressMetric">
                 <option value="weight">Highest completed weight (kg)</option>
                 <option value="reps">Highest completed reps</option>
-              </select></div>
+              </select>
+            </div>
           </div>
           <div id="progressSummary" class="progress-summary"></div>
           <div id="progressChart" class="chart-container"></div>
         </article>
         <article class="panel section-panel">
           <div class="section-heading compact">
-            <h2>Workout history</h2><span class="muted">Saved sessions</span>
+            <h2>Workout history</h2>
+            <span class="muted">Saved sessions</span>
           </div>
           <div id="progressHistory" class="entry-list"></div>
         </article>
       </section>
+
       <footer class="main-footer">FITTRACK · PROGRESS OVER PERFECTION</footer>
     </main>
   </div>
+
+  <!-- Mobile Bottom Tab Navigation for fast one-thumb switching -->
+  <nav class="mobile-bottom-nav" aria-label="Quick navigation">
+    <button class="mobile-tab-btn active" data-page="dashboard">
+      <span class="tab-icon">◫</span>
+      <span class="tab-label">Dashboard</span>
+    </button>
+    <button class="mobile-tab-btn" data-page="workouts">
+      <span class="tab-icon">↗</span>
+      <span class="tab-label">Workouts</span>
+    </button>
+    <button class="mobile-tab-btn" data-page="food">
+      <span class="tab-icon">◉</span>
+      <span class="tab-label">Food</span>
+    </button>
+    <button class="mobile-tab-btn" data-page="weight">
+      <span class="tab-icon">⚖</span>
+      <span class="tab-label">Weight</span>
+    </button>
+    <button class="mobile-tab-btn" data-page="progress">
+      <span class="tab-icon">⌁</span>
+      <span class="tab-label">Progress</span>
+    </button>
+  </nav>
 
   <script src="sxript.js" defer></script>
 </body>
