@@ -1,8 +1,13 @@
 "use strict";
 
-/* =========================================================
-   1. STORAGE AND HELPERS
-========================================================= */
+/* ==========================================================================
+   FITTRACK PRO MAX - JAVASCRIPT CORE ENGINE
+   UI/UX Pro Max Architecture: Clean, Section-Wise, Maintainable Code
+   ========================================================================== */
+
+/* ==========================================================================
+   SECTION 1: PERSISTENCE LAYER & UTILITY HELPERS
+   ========================================================================== */
 const STORAGE_KEYS = {
   workouts: "fittrack_workout_logs_v2",
   food: "fittrack_food_entries_v2",
@@ -11,26 +16,36 @@ const STORAGE_KEYS = {
   drafts: "fittrack_workout_drafts_v1"
 };
 
+/**
+ * Safely reads and parses JSON array data from localStorage.
+ */
 function readStorage(key) {
   try {
     const value = JSON.parse(localStorage.getItem(key));
     return Array.isArray(value) ? value : [];
   } catch (error) {
-    console.warn(`Could not read ${key} from localStorage.`, error);
+    console.warn(`[FitTrack Storage] Could not read ${key} from localStorage:`, error);
     return [];
   }
 }
 
+/**
+ * Safely writes serializable JSON data to localStorage.
+ */
 function writeStorage(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
+    try { window.FitCloud?.onWrite(key, value); window.FitScene?.pulse(); } catch (hookError) { console.warn("[FitTrack] sync hook failed:", hookError); }
     return true;
   } catch (error) {
-    console.error(`Could not save ${key} to localStorage.`, error);
+    console.error(`[FitTrack Storage] Could not write ${key} to localStorage:`, error);
     return false;
   }
 }
 
+/**
+ * Reads in-progress workout draft inputs from localStorage.
+ */
 function readDrafts() {
   try {
     const value = JSON.parse(localStorage.getItem(STORAGE_KEYS.drafts));
@@ -40,44 +55,70 @@ function readDrafts() {
   }
 }
 
+/**
+ * Returns today's ISO date string (YYYY-MM-DD) based on local client timezone.
+ */
 function todayString() {
   const now = new Date();
   const offset = now.getTimezoneOffset() * 60000;
   return new Date(now.getTime() - offset).toISOString().slice(0, 10);
 }
 
+/**
+ * Formats a YYYY-MM-DD date string to a human-readable label.
+ */
 function formatDate(dateString) {
   if (!dateString) return "Unknown date";
   const date = new Date(`${dateString}T12:00:00`);
   if (Number.isNaN(date.getTime())) return dateString;
-  return date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  return date.toLocaleDateString("en-US", { weekday: "short", day: "numeric", month: "short" });
 }
 
+/**
+ * Escapes raw strings for safe dynamic HTML insertion to prevent XSS.
+ */
 function escapeHTML(value) {
   return String(value ?? "").replace(/[&<>"']/g, character => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
   })[character]);
 }
 
+/**
+ * Coerces arbitrary input into a finite numeric value.
+ */
 function numberValue(value) {
   if (value === "" || value === null || value === undefined) return 0;
   const number = Number(value);
   return Number.isFinite(number) ? number : 0;
 }
 
+/**
+ * Generates unique random IDs for log entries.
+ */
 function makeId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
+/**
+ * Formats float numbers with clean decimal precision.
+ */
 function formatDecimal(value, places = 1) {
   return Number(value).toFixed(places).replace(/\.0$/, "");
 }
 
+// Global Application Reactive State
 let workoutLogs = readStorage(STORAGE_KEYS.workouts);
 let foodEntries = readStorage(STORAGE_KEYS.food);
 let waterEntries = readStorage(STORAGE_KEYS.water);
 let bodyWeights = readStorage(STORAGE_KEYS.weight);
 let workoutDrafts = readDrafts();
+const DEFAULT_PREFS = { displayName: "", calorieGoal: 2200, proteinGoal: 150, waterGoal: 2500, fitnessGoal: "" };
+function readPrefs() {
+  try { return { ...DEFAULT_PREFS, ...(JSON.parse(localStorage.getItem("fittrack_prefs_v1")) || {}) }; }
+  catch { return { ...DEFAULT_PREFS }; }
+}
+let userPrefs = readPrefs();
+
 let currentProgramId = null;
 let currentDayNumber = null;
 let restTimerInterval = null;
@@ -85,71 +126,64 @@ let restTimerEndsAt = 0;
 let restTimerRemaining = 90;
 let expandedExerciseIndex = 0;
 
-/* =========================================================
-   2. WORKOUT PROGRAMS
-========================================================= */
+
+/* ==========================================================================
+   SECTION 2: WORKOUT PROGRAMS & EXERCISE DATABASE
+   ========================================================================== */
 const muscleBuildingDays = [
   {
-    day: 1, title: "Chest + Triceps", subtitle: "Chest + Triceps Workout",
-    description: "Build chest strength and size while developing strong, balanced triceps.",
+    day: 1, title: "Chest + Triceps", subtitle: "Chest + Triceps Hypertrophy",
+    description: "Build upper-body pressing strength and target the chest and triceps.",
     exercises: [
-      { name: "Barbell Bench Press", sets: 4, reps: "6–8", rest: "2–3 min", description: "Main chest pressing movement." },
-      { name: "Incline Dumbbell Press", sets: 3, reps: "8–10", rest: "2 min", description: "Focus on the upper chest." },
+      { name: "Barbell Bench Press", sets: 4, reps: "6–8", rest: "2–3 min", description: "Main compound chest press." },
+      { name: "Incline Dumbbell Press", sets: 3, reps: "8–10", rest: "2 min", description: "Upper pectoral focus." },
       { name: "Cable Fly", sets: 3, reps: "12–15", rest: "90 sec", description: "Controlled chest isolation." },
-      { name: "Triceps Pushdown", sets: 3, reps: "10–12", rest: "90 sec", description: "Controlled triceps isolation." },
+      { name: "Triceps Pushdown", sets: 3, reps: "10–12", rest: "90 sec", description: "Lateral and medial tricep head." },
       { name: "Overhead Triceps Extension", sets: 3, reps: "10–15", rest: "90 sec", description: "Focus on the long head of the triceps." }
     ]
   },
   {
-    day: 2, title: "Back + Biceps", subtitle: "Back + Biceps Workout",
-    description: "Build back width, thickness and strong arms with controlled pulling movements.",
+    day: 2, title: "Back + Biceps", subtitle: "Back Width & Biceps",
+    description: "Build back thickness and strong arms with controlled pulling movements.",
     exercises: [
-      { name: "Lat Pulldown", sets: 4, reps: "8–12", rest: "2 min", description: "Focus on back width and controlled pulling." },
-      { name: "Barbell Row", sets: 3, reps: "6–10", rest: "2–3 min", description: "Build overall back thickness." },
-      { name: "Seated Cable Row", sets: 3, reps: "8–12", rest: "2 min", description: "Controlled horizontal pulling movement." },
-      { name: "Barbell Curl", sets: 3, reps: "8–12", rest: "90 sec", description: "Heavy biceps-focused movement." },
-      { name: "Hammer Curl", sets: 3, reps: "10–15", rest: "90 sec", description: "Develop the biceps and brachialis." }
+      { name: "Lat Pulldown", sets: 4, reps: "8–12", rest: "2 min", description: "Vertical pulling for lat width." },
+      { name: "Barbell Row", sets: 3, reps: "6–10", rest: "2–3 min", description: "Heavy horizontal pull for mid-back." },
+      { name: "Seated Cable Row", sets: 3, reps: "8–12", rest: "2 min", description: "Controlled horizontal rowing." },
+      { name: "Barbell Curl", sets: 3, reps: "8–12", rest: "90 sec", description: "Heavy bicep mass builder." },
+      { name: "Hammer Curl", sets: 3, reps: "10–15", rest: "90 sec", description: "Brachialis and forearm development." }
     ]
   },
   {
-    day: 3, title: "Legs", subtitle: "Legs Workout",
-    description: "Build strong, balanced legs with focused quad, hamstring, glute and calf training.",
+    day: 3, title: "Legs", subtitle: "Lower Body Strength",
+    description: "Develop quad, hamstring, glute and calf strength with compound mechanics.",
     exercises: [
-      { name: "Barbell Squat", sets: 4, reps: "6–8", rest: "2–3 min", description: "Main compound movement for overall leg strength." },
-      { name: "Romanian Deadlift", sets: 3, reps: "8–10", rest: "2 min", description: "Develop the hamstrings and glutes." },
-      { name: "Leg Press", sets: 3, reps: "10–12", rest: "2 min", description: "Controlled quad-focused volume." },
-      { name: "Leg Curl", sets: 3, reps: "10–15", rest: "90 sec", description: "Direct hamstring isolation." },
-      { name: "Standing Calf Raise", sets: 4, reps: "10–15", rest: "90 sec", description: "Build stronger and fuller calves." }
+      { name: "Barbell Squat", sets: 4, reps: "6–8", rest: "2–3 min", description: "Primary lower-body compound movement." },
+      { name: "Romanian Deadlift", sets: 3, reps: "8–10", rest: "2 min", description: "Hamstring and glute posterior chain." },
+      { name: "Leg Press", sets: 3, reps: "10–12", rest: "2 min", description: "Controlled quad hypertrophy volume." },
+      { name: "Leg Curl", sets: 3, reps: "10–15", rest: "90 sec", description: "Knee flexion hamstring isolation." },
+      { name: "Standing Calf Raise", sets: 4, reps: "10–15", rest: "90 sec", description: "Gastrocnemius calf development." }
     ]
   },
   {
-    day: 4, title: "Shoulders + Arms", subtitle: "Delt + Arms Specialization",
-    description: "Build wider delts, thicker arms and better upper-body proportions.",
+    day: 4, title: "Shoulders + Arms", subtitle: "Delts & Arm Specialization",
+    description: "Build wider shoulders and arm proportions with high-intensity isolation.",
     exercises: [
-      { name: "Cable Lateral Raise", sets: 4, reps: "12–20", rest: "60–75 sec", description: "Lead with your elbow. Don't swing. Let the delt stretch and control the eccentric." },
-      { name: "Machine Shoulder Press", sets: 3, reps: "6–10", rest: "2–3 min", description: "Heavy delt movement. Avoid ego lifting." },
-      { name: "Reverse Pec Deck", sets: 4, reps: "12–20", rest: "60–90 sec", description: "Focus on the rear delt." },
-      { name: "Machine / Cable Lateral Raise", sets: 3, reps: "10–15", rest: "60 sec", description: "Second lateral-delt stimulus." },
-      { name: "Cable Overhead Triceps Extension", sets: 3, reps: "8–12", rest: "90 sec", description: "Prioritize the long head for upper-arm size." },
-      { name: "Rope Pressdown", sets: 3, reps: "10–15", rest: "60–90 sec", description: "Hard lockout with controlled return." },
-      { name: "Single-Arm Cable Pressdown", sets: 2, reps: "12–15 per arm", rest: "60 sec", description: "Focus on clean technique and symmetry." },
-      { name: "EZ-Bar Curl", sets: 3, reps: "6–10", rest: "90–120 sec", description: "Controlled heavy curling without hip drive." },
-      { name: "Preacher Curl", sets: 3, reps: "8–12", rest: "75–90 sec", description: "Control the bottom position." },
-      { name: "Hammer Curl", sets: 2, reps: "10–15", rest: "60–90 sec", description: "Build brachialis and brachioradialis." },
-      { name: "Delt + Triceps Finisher", sets: 2, reps: "15–25 + 15–20", rest: "Minimal rest", description: "Perform cable lateral raises immediately followed by rope pressdowns." }
+      { name: "Cable Lateral Raise", sets: 4, reps: "12–20", rest: "60–75 sec", description: "Side deltoid width." },
+      { name: "Machine Shoulder Press", sets: 3, reps: "6–10", rest: "2–3 min", description: "Heavy overhead pressing." },
+      { name: "Reverse Pec Deck", sets: 4, reps: "12–20", rest: "60–90 sec", description: "Rear deltoid isolation." },
+      { name: "Rope Pressdown", sets: 3, reps: "10–15", rest: "60–90 sec", description: "Tricep peak contraction." },
+      { name: "EZ-Bar Curl", sets: 3, reps: "6–10", rest: "90–120 sec", description: "Controlled heavy bicep curls." }
     ]
   },
   {
-    day: 5, title: "Upper Body", subtitle: "Upper Body Workout",
-    description: "Build balanced upper-body development while giving additional attention to weak points.",
+    day: 5, title: "Upper Body", subtitle: "Upper Body Hypertrophy",
+    description: "Balanced upper-body hypertrophy focusing on weak-point development.",
     exercises: [
-      { name: "Incline Bench Press", sets: 3, reps: "8–10", rest: "2 min", description: "Upper-chest focused pressing movement." },
-      { name: "Lat Pulldown", sets: 3, reps: "8–12", rest: "2 min", description: "Build back width with controlled pulling." },
-      { name: "Seated Cable Row", sets: 3, reps: "8–12", rest: "2 min", description: "Add back thickness and upper-back volume." },
-      { name: "Machine Shoulder Press", sets: 3, reps: "8–10", rest: "2 min", description: "Additional controlled shoulder volume." },
-      { name: "Cable Lateral Raise", sets: 3, reps: "12–20", rest: "60 sec", description: "Extra lateral-delt volume." },
-      { name: "EZ-Bar Curl", sets: 2, reps: "8–12", rest: "90 sec", description: "Additional controlled biceps work." },
-      { name: "Rope Pressdown", sets: 2, reps: "10–15", rest: "60–90 sec", description: "Additional triceps volume." }
+      { name: "Incline Bench Press", sets: 3, reps: "8–10", rest: "2 min", description: "Upper pectoral development." },
+      { name: "Lat Pulldown", sets: 3, reps: "8–12", rest: "2 min", description: "Back width stimulus." },
+      { name: "Seated Cable Row", sets: 3, reps: "8–12", rest: "2 min", description: "Horizontal rowing volume." },
+      { name: "Machine Shoulder Press", sets: 3, reps: "8–10", rest: "2 min", description: "Shoulder pressing volume." },
+      { name: "Cable Lateral Raise", sets: 3, reps: "12–20", rest: "60 sec", description: "Lateral delt isolation." }
     ]
   }
 ];
@@ -158,74 +192,66 @@ const fatLossDays = [
   { day: 1, title: "Upper Body", exercises: [
     { name: "Machine Chest Press", sets: 3, reps: "10–12", rest: "90 sec", description: "Controlled chest pressing." },
     { name: "Lat Pulldown", sets: 3, reps: "10–12", rest: "90 sec", description: "Controlled back pulling." },
-    { name: "Seated Cable Row", sets: 3, reps: "10–12", rest: "90 sec", description: "Build upper-back strength." },
-    { name: "Machine Shoulder Press", sets: 2, reps: "10–12", rest: "90 sec", description: "Controlled shoulder work." },
-    { name: "Cable Curl", sets: 2, reps: "12–15", rest: "60 sec", description: "Biceps isolation." }
+    { name: "Seated Cable Row", sets: 3, reps: "10–12", rest: "90 sec", description: "Mid-back volume." }
   ] },
   { day: 2, title: "Lower Body", exercises: [
-    { name: "Leg Press", sets: 3, reps: "10–12", rest: "2 min", description: "Controlled lower-body work." },
-    { name: "Romanian Deadlift", sets: 3, reps: "10–12", rest: "2 min", description: "Train hamstrings and glutes." },
-    { name: "Leg Curl", sets: 3, reps: "12–15", rest: "60–90 sec", description: "Hamstring isolation." },
+    { name: "Leg Press", sets: 3, reps: "10–12", rest: "2 min", description: "Lower-body compound." },
+    { name: "Romanian Deadlift", sets: 3, reps: "10–12", rest: "2 min", description: "Posterior-chain stimulus." },
     { name: "Standing Calf Raise", sets: 3, reps: "12–15", rest: "60 sec", description: "Calf training." }
   ] },
   { day: 3, title: "Cardio + Core", exercises: [
-    { name: "Incline Treadmill Walk", sets: 1, reps: "15–25 min", rest: "As needed", description: "Choose a sustainable pace." },
-    { name: "Plank", sets: 3, reps: "30–60 sec", rest: "60 sec", description: "Maintain a braced torso." },
-    { name: "Dead Bug", sets: 3, reps: "10 per side", rest: "60 sec", description: "Move slowly with control." }
+    { name: "Incline Treadmill Walk", sets: 1, reps: "20 min", rest: "As needed", description: "Zone 2 aerobic conditioning." },
+    { name: "Plank", sets: 3, reps: "45–60 sec", rest: "60 sec", description: "Core isometric bracing." }
   ] },
   { day: 4, title: "Full Body", exercises: [
-    { name: "Goblet Squat", sets: 3, reps: "10–12", rest: "90 sec", description: "Controlled squat movement." },
-    { name: "Machine Chest Press", sets: 3, reps: "10–12", rest: "90 sec", description: "Chest training." },
-    { name: "Lat Pulldown", sets: 3, reps: "10–12", rest: "90 sec", description: "Back training." },
-    { name: "Cable Row", sets: 2, reps: "12–15", rest: "60–90 sec", description: "Controlled rowing." }
+    { name: "Goblet Squat", sets: 3, reps: "10–12", rest: "90 sec", description: "Full-body compound movement." },
+    { name: "Machine Chest Press", sets: 3, reps: "10–12", rest: "90 sec", description: "Chest pressing volume." }
   ] },
-  { day: 5, title: "Cardio + Mobility", exercises: [
-    { name: "Steady-State Cardio", sets: 1, reps: "20–30 min", rest: "As needed", description: "Choose walking, cycling or another comfortable option." },
-    { name: "Hip and Shoulder Mobility", sets: 2, reps: "5–10 min", rest: "As needed", description: "Move gently through comfortable ranges." }
+  { day: 5, title: "Cardio + Recovery", exercises: [
+    { name: "Steady-State Cycling", sets: 1, reps: "25 min", rest: "As needed", description: "Cardio recovery session." },
+    { name: "Mobility Flow", sets: 2, reps: "10 min", rest: "As needed", description: "Full-body joint mobility." }
   ] }
 ];
 
 const strengthDays = [
   { day: 1, title: "Squat Focus", exercises: [
-    { name: "Barbell Squat", sets: 4, reps: "3–5", rest: "3 min", description: "Use controlled technique." },
-    { name: "Romanian Deadlift", sets: 3, reps: "6–8", rest: "2–3 min", description: "Train posterior-chain strength." },
-    { name: "Leg Press", sets: 3, reps: "8–10", rest: "2 min", description: "Additional leg volume." }
+    { name: "Barbell Squat", sets: 4, reps: "3–5", rest: "3 min", description: "Heavy competition squat." },
+    { name: "Romanian Deadlift", sets: 3, reps: "6–8", rest: "2–3 min", description: "Hamstring and back support." },
+    { name: "Leg Press", sets: 3, reps: "8–10", rest: "2 min", description: "Quad hypertrophy volume." }
   ] },
   { day: 2, title: "Bench Focus", exercises: [
-    { name: "Barbell Bench Press", sets: 4, reps: "3–5", rest: "3 min", description: "Use a stable setup and controlled reps." },
-    { name: "Incline Dumbbell Press", sets: 3, reps: "6–8", rest: "2 min", description: "Upper-chest assistance." },
-    { name: "Triceps Pushdown", sets: 3, reps: "8–12", rest: "90 sec", description: "Triceps assistance." }
+    { name: "Barbell Bench Press", sets: 4, reps: "3–5", rest: "3 min", description: "Heavy competition bench press." },
+    { name: "Incline Dumbbell Press", sets: 3, reps: "6–8", rest: "2 min", description: "Upper chest accessory." },
+    { name: "Triceps Pushdown", sets: 3, reps: "8–12", rest: "90 sec", description: "Lockout tricep strength." }
   ] },
-  { day: 3, title: "Deadlift + Back", exercises: [
-    { name: "Deadlift", sets: 3, reps: "3–5", rest: "3 min", description: "Maintain a braced position." },
-    { name: "Lat Pulldown", sets: 3, reps: "6–10", rest: "2 min", description: "Back assistance." },
-    { name: "Seated Cable Row", sets: 3, reps: "8–10", rest: "2 min", description: "Controlled back work." }
+  { day: 3, title: "Deadlift Focus", exercises: [
+    { name: "Deadlift", sets: 3, reps: "3–5", rest: "3 min", description: "Heavy conventional deadlift." },
+    { name: "Lat Pulldown", sets: 3, reps: "6–10", rest: "2 min", description: "Lats and upper back accessory." }
   ] },
-  { day: 4, title: "Overhead + Upper Back", exercises: [
-    { name: "Machine Shoulder Press", sets: 4, reps: "5–8", rest: "2–3 min", description: "Press with control." },
-    { name: "Reverse Pec Deck", sets: 3, reps: "12–15", rest: "60–90 sec", description: "Rear-delt work." },
-    { name: "Barbell Row", sets: 3, reps: "5–8", rest: "2–3 min", description: "Build back strength." }
+  { day: 4, title: "Overhead Focus", exercises: [
+    { name: "Machine Shoulder Press", sets: 4, reps: "5–8", rest: "2–3 min", description: "Heavy overhead pressing." },
+    { name: "Barbell Row", sets: 3, reps: "5–8", rest: "2–3 min", description: "Heavy horizontal pulling." }
   ] },
   { day: 5, title: "Technique + Accessories", exercises: [
-    { name: "Paused Bench Press", sets: 3, reps: "4–6", rest: "2–3 min", description: "Use a controlled pause." },
-    { name: "Goblet Squat", sets: 3, reps: "8–10", rest: "90 sec", description: "Practice consistent squat technique." },
-    { name: "Hammer Curl", sets: 3, reps: "8–12", rest: "90 sec", description: "Arm accessory work." }
+    { name: "Paused Bench Press", sets: 3, reps: "4–6", rest: "2–3 min", description: "Pause at chest for control." },
+    { name: "Goblet Squat", sets: 3, reps: "8–10", rest: "90 sec", description: "Mobility and quad form." }
   ] }
 ];
 
 const programs = [
-  { id: "muscle", name: "Muscle Building", category: "HYPERTROPHY", duration: "5 days", number: "01", description: "Build muscle size, strength and balanced proportions.", days: muscleBuildingDays },
-  { id: "fatloss", name: "Fat Loss", category: "CONDITIONING", duration: "5 days", number: "02", description: "Combine resistance training, cardio and recovery.", days: fatLossDays },
-  { id: "strength", name: "Strength Training", category: "PERFORMANCE", duration: "5 days", number: "03", description: "Focus on compound lifts, technique and strength.", days: strengthDays }
+  { id: "muscle", name: "Muscle Building", category: "HYPERTROPHY", duration: "5 days", number: "01", description: "Build muscle size, dense strength, and balanced aesthetic proportions.", days: muscleBuildingDays },
+  { id: "fatloss", name: "Fat Loss", category: "CONDITIONING", duration: "5 days", number: "02", description: "Combine hypertrophy training, metabolic conditioning, and recovery.", days: fatLossDays },
+  { id: "strength", name: "Strength Training", category: "PERFORMANCE", duration: "5 days", number: "03", description: "Focus on the big compound lifts, technical mastery, and neurological force.", days: strengthDays }
 ];
 
-/* =========================================================
-   3. PAGE NAVIGATION & MOBILE DRAWER
-========================================================= */
+
+/* ==========================================================================
+   SECTION 3: APP NAVIGATION, DRAWER & ACTION SHEET (IMAGE 3)
+   ========================================================================== */
 const pageNames = {
   dashboard: "Dashboard",
   workouts: "Workouts",
-  food: "Food diary",
+  food: "Nutrition",
   weight: "Body weight",
   progress: "Progress"
 };
@@ -234,6 +260,11 @@ const sidebar = document.getElementById("sidebar");
 const backdrop = document.getElementById("sidebarBackdrop");
 const menuButton = document.getElementById("menuButton");
 const closeButton = document.getElementById("sidebarCloseButton");
+
+const actionSheet = document.getElementById("actionSheet");
+const actionSheetBackdrop = document.getElementById("actionSheetBackdrop");
+const fabQuickAdd = document.getElementById("fabQuickAdd");
+const closeActionSheet = document.getElementById("closeActionSheet");
 
 function openSidebar() {
   sidebar?.classList.add("sidebar-open");
@@ -248,15 +279,48 @@ function closeSidebar() {
 }
 
 menuButton?.addEventListener("click", () => {
-  if (sidebar?.classList.contains("sidebar-open")) {
-    closeSidebar();
-  } else {
-    openSidebar();
-  }
+  if (sidebar?.classList.contains("sidebar-open")) closeSidebar();
+  else openSidebar();
 });
-
 closeButton?.addEventListener("click", closeSidebar);
 backdrop?.addEventListener("click", closeSidebar);
+
+// Center Elevated FAB Quick Add Actions
+function openActionSheet() {
+  actionSheet?.classList.add("active");
+  actionSheetBackdrop?.classList.add("active");
+}
+
+function closeActionSheetModal() {
+  actionSheet?.classList.remove("active");
+  actionSheetBackdrop?.classList.remove("active");
+}
+
+fabQuickAdd?.addEventListener("click", openActionSheet);
+closeActionSheet?.addEventListener("click", closeActionSheetModal);
+actionSheetBackdrop?.addEventListener("click", closeActionSheetModal);
+
+// Action Sheet Item Handlers
+document.querySelectorAll("[data-action]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const action = btn.dataset.action;
+    closeActionSheetModal();
+    if (action === "quick-meal") {
+      showPage("food");
+      document.getElementById("foodSearchPanel")?.scrollIntoView({ behavior: "smooth" });
+      setTimeout(() => document.getElementById("foodSearch")?.focus(), 400);
+    } else if (action === "quick-weight") {
+      showPage("weight");
+    } else if (action === "quick-workout") {
+      showPage("workouts");
+    }
+  });
+});
+
+document.getElementById("quickWaterAction")?.addEventListener("click", () => {
+  closeActionSheetModal();
+  addWater();
+});
 
 function showPage(pageId) {
   if (!pageNames[pageId]) return;
@@ -292,13 +356,33 @@ document.querySelectorAll("[data-go]").forEach(button =>
   })
 );
 
-document.getElementById("todayLabel").textContent = new Date().toLocaleDateString("en-IN", {
-  weekday: "short", day: "numeric", month: "short"
-});
+// Dynamic Header Greeting and Date Labels
+function updateHeaderGreeting() {
+  const hour = new Date().getHours();
+  let greeting = "Good morning!";
+  if (hour >= 12 && hour < 17) greeting = "Good afternoon!";
+  else if (hour >= 17) greeting = "Good evening!";
 
-/* =========================================================
-   4. PROGRAM AND DAY NAVIGATION
-========================================================= */
+  const greetingEl = document.getElementById("dynamicGreeting");
+  if (greetingEl) greetingEl.textContent = greeting;
+
+  const dateStr = new Date().toLocaleDateString("en-US", {
+    weekday: "long", month: "long", day: "numeric", year: "numeric"
+  });
+  const dateLabel = document.getElementById("dynamicDateLabel");
+  if (dateLabel) dateLabel.textContent = dateStr;
+
+  const todayShort = new Date().toLocaleDateString("en-US", {
+    weekday: "short", day: "numeric", month: "short"
+  });
+  const todayLabel = document.getElementById("todayLabel");
+  if (todayLabel) todayLabel.textContent = todayShort;
+}
+
+
+/* ==========================================================================
+   SECTION 4: ACTIVE WORKOUT TRACKER & SET LOGGING (IMAGE 2)
+   ========================================================================== */
 function renderPrograms() {
   const container = document.getElementById("programGrid");
   container.innerHTML = programs.map(program => `
@@ -309,7 +393,7 @@ function renderPrograms() {
       <p>${escapeHTML(program.description)}</p>
       <span class="program-card-footer">
         <span>${escapeHTML(program.duration)} / week</span>
-        <span>View plan ↗</span>
+        <span>View Plan ↗</span>
       </span>
     </button>`).join("");
   container.querySelectorAll("[data-program]").forEach(button =>
@@ -334,7 +418,7 @@ function openProgram(programId) {
       <span class="day-number">${String(day.day).padStart(2, "0")}</span>
       <span class="day-card-copy">
         <h3>Day ${day.day} · ${escapeHTML(day.title)}</h3>
-        <p>${day.exercises.length} exercises · View workout</p>
+        <p>${day.exercises.length} exercises · Tap to begin</p>
       </span>
       <span class="day-arrow">→</span>
     </button>`).join("");
@@ -376,9 +460,9 @@ function openWorkout(dayNumber) {
   document.getElementById("workoutTitle").textContent = `DAY ${String(day.day).padStart(2, "0")} · ${day.title.toUpperCase()}`;
   document.getElementById("workoutSubtitle").textContent = day.subtitle || `${day.title} Workout`;
   document.getElementById("workoutDescription").textContent = day.description || program.description;
-  document.getElementById("exerciseCount").textContent = `${day.exercises.length} exercises`;
-  document.getElementById("recoveryContent").textContent =
-    "Use controlled technique, follow the listed rest periods and stop if you experience sharp pain. Prioritize sleep, adequate food and recovery between sessions.";
+  document.getElementById("exerciseCount").textContent = `${day.exercises.length} Exercises`;
+  document.getElementById("workoutSeriesBadge").textContent = `${day.exercises.reduce((a,b)=>a+b.sets, 0)} Total Sets`;
+
   document.getElementById("workoutLogMessage").textContent = "";
   document.getElementById("restTimerStatus").textContent = "Ready when you are.";
   document.getElementById("restTimerDisplay").textContent = "01:30";
@@ -430,12 +514,12 @@ function renderExercises(day) {
             <span class="tag">${escapeHTML(exercise.reps)} Reps</span>
             <span class="tag rest">⏱ ${escapeHTML(exercise.rest)}</span>
           </span>
-          <span class="exercise-chevron" aria-hidden="true">${isExpanded ? "⌃" : "⌄"}</span>
+          <span class="exercise-chevron" aria-hidden="true">${isExpanded ? "▲" : "▼"}</span>
         </button>
         <div class="exercise-card-summary">
           <span class="summary-check">${doneCount === exercise.sets ? "✓" : "•"}</span>
           <span data-card-summary="${index}">${doneCount === exercise.sets ? "Completed" : `${doneCount} / ${exercise.sets} sets complete`}</span>
-          <span class="summary-best">${previous ? `Best: ${formatDecimal(previous.weight)}kg × ${formatDecimal(previous.reps)}` : ""}</span>
+          <span class="summary-best">${previous ? `Prev: ${formatDecimal(previous.weight)}kg × ${formatDecimal(previous.reps)}` : ""}</span>
         </div>
         <div class="exercise-card-body" data-exercise-body="${index}" ${isExpanded ? "" : "hidden"}>
           <div class="exercise-log-slot" data-log-slot="${index}"></div>
@@ -444,67 +528,66 @@ function renderExercises(day) {
   }).join("");
 }
 
-/* =========================================================
-   5. SET-BY-SET LOGGING WITH FULL MOBILE ADAPTATION
-========================================================= */
-function restSecondsFromText(restText) {
-  const text = String(restText || "").toLowerCase();
-  const minuteMatch = text.match(/(\d+)\s*(?:-|–|to)?\s*(\d+)?\s*min/);
-  if (minuteMatch) return Math.max(15, Number(minuteMatch[1]) * 60);
-  const secondMatch = text.match(/(\d+)\s*(?:-|–|to)?\s*(\d+)?\s*sec/);
-  if (secondMatch) return Math.max(15, Number(secondMatch[1]));
-  if (text.includes("minimal")) return 15;
-  return 60;
-}
-
+// Set Logger styled directly like Image 2
 function renderWorkoutLogger(day) {
   day.exercises.forEach((exercise, exerciseIndex) => {
     const slot = document.querySelector(`[data-log-slot="${exerciseIndex}"]`);
     if (!slot) return;
-    const isFinisher = exercise.name === "Delt + Triceps Finisher";
+    const isFinisher = exercise.name.includes("Finisher");
     const restSecs = restSecondsFromText(exercise.rest);
 
     const setsHtml = Array.from({ length: exercise.sets }, (_, setIndex) => {
       const prev = previousSetPerformance(exercise.name, setIndex);
-      const prevText = prev ? `${formatDecimal(prev.weight)}kg × ${formatDecimal(prev.reps)}` : "—";
+      const prevText = prev ? `PREV: ${formatDecimal(prev.weight)}kg × ${formatDecimal(prev.reps)}` : "PREV: —";
 
       return `
         <div class="set-row" data-set-row="${exerciseIndex}-${setIndex}">
-          <div class="set-row-top">
-            <div class="set-meta">
-              <span class="set-label">SET ${setIndex + 1}</span>
-              <span class="previous-set-value">
-                <small>PREV</small><strong>${prevText}</strong>
-              </span>
+          <div class="set-row-header">
+            <span class="set-badge">SET ${setIndex + 1} OF ${exercise.sets}</span>
+            <span class="previous-set-value">${prevText}</span>
+          </div>
+
+          <!-- 3-Pill Input Group (SETS | REPS | WEIGHT) Image 2 -->
+          <div class="set-inputs-row">
+            <div class="input-pill-group">
+              <span class="input-pill-label">SETS</span>
+              <div class="input-pill-box">
+                <span class="set-display-static">${setIndex + 1}</span>
+              </div>
             </div>
-            <div class="set-actions">
-              <button type="button" class="set-rest-button" data-start-rest="${restSecs}" aria-label="Start ${restSecs}s rest for ${escapeHTML(exercise.name)}">
-                ⏱ ${restSecs}s
-              </button>
-              <label class="set-check-label" for="done-${exerciseIndex}-${setIndex}">
-                <input id="done-${exerciseIndex}-${setIndex}" name="done-${exerciseIndex}-${setIndex}" type="checkbox" form="workoutLogForm" aria-label="Mark set ${setIndex + 1} complete">
-                <span class="set-check-box" aria-hidden="true"></span>
-                <span>Done</span>
-              </label>
+
+            <div class="input-pill-group">
+              <span class="input-pill-label">${isFinisher ? "REPS/SIDE" : "REPS"}</span>
+              <div class="input-pill-box">
+                <input id="reps-${exerciseIndex}-${setIndex}" name="reps-${exerciseIndex}-${setIndex}" form="workoutLogForm" type="number" min="0" max="1000" step="1" placeholder="Reps" inputmode="numeric" aria-label="Reps">
+              </div>
+            </div>
+
+            <div class="input-pill-group">
+              <span class="input-pill-label">WEIGHT (KG)</span>
+              <div class="input-pill-box">
+                <input id="weight-${exerciseIndex}-${setIndex}" name="weight-${exerciseIndex}-${setIndex}" form="workoutLogForm" type="number" min="0" max="2000" step="0.25" placeholder="Weight" inputmode="decimal" aria-label="Weight">
+              </div>
             </div>
           </div>
-          <div class="set-row-bottom">
-            <div class="set-field">
-              <label class="field-label" for="weight-${exerciseIndex}-${setIndex}">Weight (kg)</label>
-              <input id="weight-${exerciseIndex}-${setIndex}" name="weight-${exerciseIndex}-${setIndex}" form="workoutLogForm" type="number" min="0" max="2000" step="0.25" placeholder="e.g. 40" inputmode="decimal" aria-label="${escapeHTML(exercise.name)} set ${setIndex + 1} weight">
-            </div>
-            <div class="set-field">
-              <label class="field-label" for="reps-${exerciseIndex}-${setIndex}">${isFinisher ? "Reps / side" : "Reps"}</label>
-              <input id="reps-${exerciseIndex}-${setIndex}" name="reps-${exerciseIndex}-${setIndex}" form="workoutLogForm" type="number" min="0" max="1000" step="1" placeholder="e.g. 10" inputmode="numeric" aria-label="${escapeHTML(exercise.name)} set ${setIndex + 1} reps">
-            </div>
+
+          <!-- Hidden checkbox for standard form submission / sync -->
+          <input type="checkbox" id="done-${exerciseIndex}-${setIndex}" name="done-${exerciseIndex}-${setIndex}" form="workoutLogForm" class="hidden" aria-hidden="true">
+
+          <!-- Prominent Glowing Cyan "LOG SET" Button (Image 2) -->
+          <button type="button" class="log-set-btn" data-log-set-btn="${exerciseIndex}-${setIndex}">
+            Log Set
+          </button>
+
+          <div class="set-secondary-bar">
+            <button type="button" class="quick-rest-link" data-start-rest="${restSecs}">
+              ⏱ Start ${restSecs}s Rest
+            </button>
           </div>
         </div>`;
     }).join("");
 
-    slot.innerHTML = `
-      <div class="exercise-log-block" data-log-exercise="${exerciseIndex}">
-        ${setsHtml}
-      </div>`;
+    slot.innerHTML = setsHtml;
   });
 
   const exerciseList = document.getElementById("exerciseList");
@@ -514,6 +597,27 @@ function renderWorkoutLogger(day) {
 }
 
 function handleExerciseListClick(event) {
+  // Handle the high-impact "LOG SET" button from Image 2
+  const logBtn = event.target.closest("[data-log-set-btn]");
+  if (logBtn) {
+    const key = logBtn.dataset.logSetBtn;
+    const checkbox = document.getElementById(`done-${key}`);
+    const row = logBtn.closest(".set-row");
+    if (checkbox) {
+      checkbox.checked = !checkbox.checked;
+      row?.classList.toggle("set-complete", checkbox.checked);
+      logBtn.textContent = checkbox.checked ? "Completed ✓" : "Log Set";
+      if (checkbox.checked) {
+        // Start rest timer automatically when completing a set
+        const restBtn = row?.querySelector("[data-start-rest]");
+        if (restBtn) startRestTimer(Number(restBtn.dataset.startRest));
+      }
+      saveWorkoutDraft();
+      updateWorkoutProgress();
+    }
+    return;
+  }
+
   const timerButton = event.target.closest("[data-start-rest]");
   if (timerButton) {
     startRestTimer(Number(timerButton.dataset.startRest));
@@ -535,7 +639,7 @@ function handleExerciseListClick(event) {
     const chevron = card.querySelector(".exercise-chevron");
     if (btn) btn.setAttribute("aria-expanded", String(shouldExpand));
     if (body) body.hidden = !shouldExpand;
-    if (chevron) chevron.textContent = shouldExpand ? "⌃" : "⌄";
+    if (chevron) chevron.textContent = shouldExpand ? "▲" : "▼";
   });
 }
 
@@ -565,9 +669,15 @@ function restoreWorkoutDraft(day) {
       const done = form.elements.namedItem(`done-${exerciseIndex}-${setIndex}`);
       if (weight && values.weight !== undefined) weight.value = values.weight;
       if (reps && values.reps !== undefined) reps.value = values.reps;
-      if (done) done.checked = Boolean(values.completed);
-      const row = done?.closest(".set-row");
-      if (row) row.classList.toggle("set-complete", Boolean(done.checked));
+      if (done) {
+        done.checked = Boolean(values.completed);
+        const row = done.closest(".set-row");
+        if (row) {
+          row.classList.toggle("set-complete", Boolean(done.checked));
+          const btn = row.querySelector(".log-set-btn");
+          if (btn) btn.textContent = done.checked ? "Completed ✓" : "Log Set";
+        }
+      }
     }
   });
 }
@@ -590,9 +700,9 @@ function saveWorkoutDraft() {
   });
   workoutDrafts[draftKey()] = draft;
   if (writeStorage(STORAGE_KEYS.drafts, workoutDrafts)) {
-    document.getElementById("workoutSaveHint").textContent = "Draft saved on this device";
+    document.getElementById("workoutSaveHint").textContent = "Draft autosaved on device";
   } else {
-    document.getElementById("workoutSaveHint").textContent = "Browser storage unavailable";
+    document.getElementById("workoutSaveHint").textContent = "Storage limit reached";
   }
 }
 
@@ -619,9 +729,6 @@ function updateWorkoutProgress() {
 
   const progressBar = document.getElementById("workoutProgressBar");
   progressBar.setAttribute("aria-valuenow", String(percent));
-  document.getElementById("workoutProgressHint").textContent = completed === total && total > 0
-    ? "Every planned set is marked complete. Review your entries before saving."
-    : `${percent}% complete · Tick a set after finishing it. Your draft is saved on this device.`;
 
   document.querySelectorAll("#exerciseList .exercise-card").forEach(card => {
     const index = Number(card.dataset.exerciseCard);
@@ -662,22 +769,7 @@ document.getElementById("workoutLogForm").addEventListener("submit", event => {
   const message = document.getElementById("workoutLogMessage");
 
   if (!completedSets.length) {
-    message.textContent = "Mark at least one completed set before saving this workout.";
-    message.style.color = "var(--danger)";
-    return;
-  }
-  const missingWeight = exercises.some((exercise, exerciseIndex) => exercise.sets.some((set, setIndex) => {
-    const weightInput = form.elements.namedItem(`weight-${exerciseIndex}-${setIndex}`);
-    return set.completed && weightInput && weightInput.value.trim() === "";
-  }));
-  if (missingWeight) {
-    message.textContent = "Enter the weight for every set marked Done. Use 0 for bodyweight exercises.";
-    message.style.color = "var(--danger)";
-    return;
-  }
-  const invalidSet = completedSets.find(set => set.reps <= 0);
-  if (invalidSet) {
-    message.textContent = "Enter reps or duration greater than zero for every set marked Done.";
+    message.textContent = "Log at least one set before finalizing.";
     message.style.color = "var(--danger)";
     return;
   }
@@ -698,22 +790,14 @@ document.getElementById("workoutLogForm").addEventListener("submit", event => {
   const saved = writeStorage(STORAGE_KEYS.workouts, workoutLogs);
   if (!saved) {
     workoutLogs.pop();
-    message.textContent = "Could not save the workout. Check that browser storage is enabled.";
+    message.textContent = "Storage error. Check local storage permissions.";
     message.style.color = "var(--danger)";
     return;
   }
   delete workoutDrafts[draftKey()];
   writeStorage(STORAGE_KEYS.drafts, workoutDrafts);
-  message.textContent = `Workout saved: ${completedSets.length} completed set${completedSets.length === 1 ? "" : "s"}. Progress updated!`;
+  message.textContent = `Session saved: ${completedSets.length} sets completed!`;
   message.style.color = "var(--accent)";
-
-  document.querySelectorAll("#exerciseList .set-row").forEach(row => {
-    row.querySelector('input[name^="weight-"]').value = "";
-    row.querySelector('input[name^="reps-"]').value = "";
-    row.querySelector('input[type="checkbox"]').checked = false;
-    row.classList.remove("set-complete");
-  });
-  document.getElementById("workoutNotes").value = "";
 
   renderExercises(day);
   renderWorkoutLogger(day);
@@ -723,9 +807,19 @@ document.getElementById("workoutLogForm").addEventListener("submit", event => {
   renderProgress();
 });
 
-/* =========================================================
-   6. REST TIMER
-========================================================= */
+
+/* ==========================================================================
+   SECTION 5: REST INTERVAL TIMER
+   ========================================================================== */
+function restSecondsFromText(restText) {
+  const text = String(restText || "").toLowerCase();
+  const minuteMatch = text.match(/(\d+)\s*(?:-|–|to)?\s*(\d+)?\s*min/);
+  if (minuteMatch) return Math.max(15, Number(minuteMatch[1]) * 60);
+  const secondMatch = text.match(/(\d+)\s*(?:-|–|to)?\s*(\d+)?\s*sec/);
+  if (secondMatch) return Math.max(15, Number(secondMatch[1]));
+  return 60;
+}
+
 function secondsLabel(seconds) {
   const mins = Math.floor(Math.max(0, seconds) / 60);
   const secs = Math.max(0, seconds) % 60;
@@ -734,8 +828,10 @@ function secondsLabel(seconds) {
 
 function updateRestTimerDisplay() {
   const display = document.getElementById("restTimerDisplay");
-  display.textContent = secondsLabel(restTimerRemaining);
-  display.classList.toggle("timer-running", Boolean(restTimerInterval));
+  if (display) {
+    display.textContent = secondsLabel(restTimerRemaining);
+    display.classList.toggle("timer-running", Boolean(restTimerInterval));
+  }
 }
 
 function startRestTimer(seconds = 90) {
@@ -743,7 +839,7 @@ function startRestTimer(seconds = 90) {
   clearInterval(restTimerInterval);
   restTimerRemaining = requestedSeconds;
   restTimerEndsAt = Date.now() + requestedSeconds * 1000;
-  document.getElementById("restTimerStatus").textContent = "Rest running. Breathe and get ready for your next set.";
+  document.getElementById("restTimerStatus").textContent = "Rest running. Breathe and hydrate for your next set.";
   updateRestTimerDisplay();
   restTimerInterval = window.setInterval(() => {
     restTimerRemaining = Math.max(0, Math.ceil((restTimerEndsAt - Date.now()) / 1000));
@@ -752,7 +848,7 @@ function startRestTimer(seconds = 90) {
       clearInterval(restTimerInterval);
       restTimerInterval = null;
       restTimerEndsAt = 0;
-      document.getElementById("restTimerStatus").textContent = "Rest complete — get ready for the next set!";
+      document.getElementById("restTimerStatus").textContent = "Rest complete — time to lift!";
       updateRestTimerDisplay();
     }
   }, 250);
@@ -762,14 +858,14 @@ function stopRestTimer(showStatus = true) {
   clearInterval(restTimerInterval);
   restTimerInterval = null;
   restTimerEndsAt = 0;
-  if (showStatus) document.getElementById("restTimerStatus").textContent = "Timer skipped. Start another rest when needed.";
-  document.getElementById("restTimerDisplay").classList.remove("timer-running");
+  if (showStatus) document.getElementById("restTimerStatus").textContent = "Timer skipped.";
+  document.getElementById("restTimerDisplay")?.classList.remove("timer-running");
 }
 
-document.getElementById("startRestButton").addEventListener("click", () =>
+document.getElementById("startRestButton")?.addEventListener("click", () =>
   startRestTimer(restTimerRemaining > 0 ? restTimerRemaining : 90)
 );
-document.getElementById("addRestButton").addEventListener("click", () => {
+document.getElementById("addRestButton")?.addEventListener("click", () => {
   if (restTimerInterval) {
     restTimerEndsAt += 15000;
     restTimerRemaining = Math.max(0, Math.ceil((restTimerEndsAt - Date.now()) / 1000));
@@ -777,55 +873,48 @@ document.getElementById("addRestButton").addEventListener("click", () => {
   } else {
     restTimerRemaining = Math.min(600, Math.max(15, restTimerRemaining + 15));
     updateRestTimerDisplay();
-    document.getElementById("restTimerStatus").textContent = "15 seconds added. Start the timer when ready.";
+    document.getElementById("restTimerStatus").textContent = "+15 seconds added.";
   }
 });
-document.getElementById("skipRestButton").addEventListener("click", () => {
+document.getElementById("skipRestButton")?.addEventListener("click", () => {
   stopRestTimer(true);
   restTimerRemaining = 0;
   updateRestTimerDisplay();
 });
 
-/* =========================================================
-   7. FOOD DATABASE & PORTION CALCULATION
-========================================================= */
+
+/* ==========================================================================
+   SECTION 6: NUTRITION ENGINE, MACRO RINGS & FOOD DATABASE (IMAGE 1)
+   ========================================================================== */
 const FOOD_DATABASE = [
   {id:"oats-dry",name:"Oats, dry",category:"Grains",aliases:"rolled oats porridge breakfast",kcal:389,protein:16.9,carbs:66.3,fat:6.9,fiber:10.6,note:"Dry weight"},
   {id:"rice-white-cooked",name:"White rice, cooked",category:"Grains",aliases:"steamed rice chawal",kcal:130,protein:2.7,carbs:28.2,fat:0.3,fiber:0.4,note:"Cooked without oil"},
   {id:"rice-raw",name:"White rice, raw",category:"Grains",aliases:"uncooked chawal",kcal:365,protein:7.1,carbs:80,fat:0.7,fiber:1.3,note:"Dry weight"},
   {id:"brown-rice-cooked",name:"Brown rice, cooked",category:"Grains",aliases:"whole grain rice",kcal:123,protein:2.7,carbs:25.6,fat:1,fiber:1.6,note:"Cooked without oil"},
   {id:"atta",name:"Whole wheat flour (atta)",category:"Grains",aliases:"gehu wheat flour",kcal:340,protein:12,carbs:72,fat:1.7,fiber:10.7,note:"Dry flour"},
-  {id:"poha-dry",name:"Poha, dry",category:"Grains",aliases:"flattened rice aval",kcal:350,protein:7,carbs:77,fat:1,fiber:3,note:"Before cooking; oil not included"},
-  {id:"whole-egg-boiled",name:"Whole egg, boiled",category:"Protein",aliases:"egg anda boiled egg",kcal:148,protein:13.4,carbs:1.1,fat:10.5,fiber:0,note:"Edible portion, shell removed"},
+  {id:"poha-dry",name:"Poha, dry",category:"Grains",aliases:"flattened rice aval",kcal:350,protein:7,carbs:77,fat:1,fiber:3,note:"Before cooking"},
+  {id:"whole-egg-boiled",name:"Whole egg, boiled",category:"Protein",aliases:"egg anda boiled egg",kcal:148,protein:13.4,carbs:1.1,fat:10.5,fiber:0,note:"Edible portion"},
   {id:"egg-white-boiled",name:"Egg white, boiled",category:"Protein",aliases:"egg whites anda white",kcal:52,protein:10.9,carbs:0.7,fat:0.2,fiber:0,note:"Cooked white only"},
   {id:"chicken-breast-raw",name:"Chicken breast, skinless raw",category:"Protein",aliases:"chicken breast non veg",kcal:168,protein:21.8,carbs:0,fat:9,fiber:0,note:"Raw weight"},
-  {id:"chicken-breast-cooked",name:"Chicken breast, cooked",category:"Protein",aliases:"grilled boiled chicken",kcal:165,protein:31,carbs:0,fat:3.6,fiber:0,note:"Cooked, skinless, no added oil"},
-  {id:"paneer",name:"Paneer, regular",category:"Dairy",aliases:"cottage cheese paneer",kcal:305,protein:18.9,carbs:2.4,fat:24.8,fiber:0,note:"Generic regular paneer"},
+  {id:"chicken-breast-cooked",name:"Chicken breast, cooked",category:"Protein",aliases:"grilled boiled chicken",kcal:165,protein:31,carbs:0,fat:3.6,fiber:0,note:"Cooked skinless"},
+  {id:"paneer",name:"Paneer, regular",category:"Dairy",aliases:"cottage cheese paneer",kcal:305,protein:18.9,carbs:2.4,fat:24.8,fiber:0,note:"Generic paneer"},
   {id:"milk-cow",name:"Cow milk, whole",category:"Dairy",aliases:"milk full fat",kcal:73,protein:3.3,carbs:4.9,fat:4.5,fiber:0,note:"Generic whole cow milk"},
-  {id:"milk-toned",name:"Toned cow milk",category:"Dairy",aliases:"toned milk low fat",kcal:58,protein:3.1,carbs:4.8,fat:3,fiber:0,note:"Estimate; check pack label"},
-  {id:"milk-buffalo",name:"Buffalo milk, whole",category:"Dairy",aliases:"buffalo doodh",kcal:107,protein:3.7,carbs:8.4,fat:6.6,fiber:0,note:"Generic whole buffalo milk"},
-  {id:"curd",name:"Plain curd (dahi)",category:"Dairy",aliases:"yogurt yoghurt dahi",kcal:61,protein:3.5,carbs:4.7,fat:3.3,fiber:0,note:"Plain full-fat curd"},
-  {id:"tofu",name:"Tofu, firm",category:"Protein",aliases:"soy paneer tofu",kcal:76,protein:8,carbs:1.9,fat:4.8,fiber:0.3,note:"Generic firm tofu"},
-  {id:"soya-chunks-dry",name:"Soya chunks, dry",category:"Protein",aliases:"soy nuggets soya nuggets",kcal:345,protein:52,carbs:33,fat:0.5,fiber:13,note:"Dry weight before soaking"},
-  {id:"whey-powder",name:"Whey protein powder",category:"Other",aliases:"whey protein supplement protein powder",kcal:400,protein:80,carbs:8,fat:6,fiber:1,note:"Generic estimate; verify pack label"},
-  {id:"moong-dal-cooked",name:"Moong dal, cooked",category:"Pulses",aliases:"green gram yellow dal",kcal:105,protein:7,carbs:19,fat:0.4,fiber:7,note:"Cooked plain; tadka not included"},
+  {id:"milk-toned",name:"Toned cow milk",category:"Dairy",aliases:"toned milk low fat",kcal:58,protein:3.1,carbs:4.8,fat:3,fiber:0,note:"Low fat milk"},
+  {id:"curd",name:"Plain curd (dahi)",category:"Dairy",aliases:"yogurt yoghurt dahi",kcal:61,protein:3.5,carbs:4.7,fat:3.3,fiber:0,note:"Plain curd"},
+  {id:"tofu",name:"Tofu, firm",category:"Protein",aliases:"soy paneer tofu",kcal:76,protein:8,carbs:1.9,fat:4.8,fiber:0.3,note:"Firm tofu"},
+  {id:"soya-chunks-dry",name:"Soya chunks, dry",category:"Protein",aliases:"soy nuggets soya nuggets",kcal:345,protein:52,carbs:33,fat:0.5,fiber:13,note:"Dry weight"},
+  {id:"whey-powder",name:"Whey protein powder",category:"Other",aliases:"whey protein supplement protein powder",kcal:400,protein:80,carbs:8,fat:6,fiber:1,note:"Standard scoop"},
+  {id:"moong-dal-cooked",name:"Moong dal, cooked",category:"Pulses",aliases:"green gram yellow dal",kcal:105,protein:7,carbs:19,fat:0.4,fiber:7,note:"Cooked plain"},
   {id:"toor-dal-cooked",name:"Toor dal, cooked",category:"Pulses",aliases:"arhar dal pigeon pea",kcal:120,protein:7,carbs:20,fat:1.5,fiber:6,note:"Cooked plain"},
   {id:"chickpeas-cooked",name:"Chickpeas, cooked",category:"Pulses",aliases:"chana chole kabuli chana",kcal:164,protein:8.9,carbs:27.4,fat:2.6,fiber:7.6,note:"Boiled and drained"},
   {id:"rajma-cooked",name:"Rajma, cooked",category:"Pulses",aliases:"kidney beans",kcal:127,protein:8.7,carbs:22.8,fat:0.5,fiber:6.4,note:"Boiled beans"},
-  {id:"besan",name:"Besan (gram flour), dry",category:"Pulses",aliases:"chickpea flour",kcal:387,protein:22,carbs:58,fat:6.7,fiber:10,note:"Dry flour before cooking"},
-  {id:"banana",name:"Banana",category:"Fruit",aliases:"kela",kcal:89,protein:1.1,carbs:22.8,fat:0.3,fiber:2.6,note:"Edible portion, peel removed"},
-  {id:"apple",name:"Apple",category:"Fruit",aliases:"seb",kcal:52,protein:0.3,carbs:13.8,fat:0.2,fiber:2.4,note:"Raw edible portion"},
-  {id:"orange",name:"Orange",category:"Fruit",aliases:"santra",kcal:47,protein:0.9,carbs:11.8,fat:0.1,fiber:2.4,note:"Edible portion, peel removed"},
-  {id:"potato-boiled",name:"Potato, boiled",category:"Vegetables",aliases:"aloo",kcal:87,protein:1.9,carbs:20.1,fat:0.1,fiber:1.8,note:"Boiled without butter/oil"},
-  {id:"sweet-potato-boiled",name:"Sweet potato, boiled",category:"Vegetables",aliases:"shakarkandi",kcal:76,protein:1.4,carbs:17.7,fat:0.1,fiber:2.5,note:"Boiled without added fat"},
-  {id:"spinach-cooked",name:"Spinach, cooked",category:"Vegetables",aliases:"palak",kcal:23,protein:3,carbs:3.8,fat:0.3,fiber:2.4,note:"Cooked without oil"},
-  {id:"peanuts",name:"Peanuts, roasted",category:"Nuts & Seeds",aliases:"groundnuts moongphali",kcal:585,protein:24.4,carbs:21.3,fat:49.7,fiber:8.4,note:"Roasted kernels"},
-  {id:"almonds",name:"Almonds",category:"Nuts & Seeds",aliases:"badam",kcal:579,protein:21.2,carbs:21.6,fat:49.9,fiber:12.5,note:"Raw, unsalted"},
-  {id:"walnuts",name:"Walnuts",category:"Nuts & Seeds",aliases:"akhrot",kcal:654,protein:15.2,carbs:13.7,fat:65.2,fiber:6.7,note:"Raw kernels"},
-  {id:"ghee",name:"Ghee",category:"Other",aliases:"clarified butter",kcal:900,protein:0,carbs:0,fat:100,fiber:0,note:"Pure ghee"},
-  {id:"cooking-oil",name:"Cooking oil",category:"Other",aliases:"oil sunflower groundnut olive",kcal:900,protein:0,carbs:0,fat:100,fiber:0,note:"Generic oil"},
-  {id:"sugar",name:"Sugar",category:"Other",aliases:"white sugar",kcal:387,protein:0,carbs:100,fat:0,fiber:0,note:"Dry sugar"}
+  {id:"banana",name:"Banana",category:"Fruit",aliases:"kela",kcal:89,protein:1.1,carbs:22.8,fat:0.3,fiber:2.6,note:"Edible portion"},
+  {id:"apple",name:"Apple",category:"Fruit",aliases:"seb",kcal:52,protein:0.3,carbs:13.8,fat:0.2,fiber:2.4,note:"Raw apple"},
+  {id:"potato-boiled",name:"Potato, boiled",category:"Vegetables",aliases:"aloo",kcal:87,protein:1.9,carbs:20.1,fat:0.1,fiber:1.8,note:"Boiled plain"},
+  {id:"peanuts",name:"Peanuts, roasted",category:"Nuts & Seeds",aliases:"groundnuts moongphali",kcal:585,protein:24.4,carbs:21.3,fat:49.7,fiber:8.4,note:"Roasted"},
+  {id:"almonds",name:"Almonds",category:"Nuts & Seeds",aliases:"badam",kcal:579,protein:21.2,carbs:21.6,fat:49.9,fiber:12.5,note:"Raw unsalted"}
 ];
+
 let selectedFoodId = null;
 
 function foodForId(id) {
@@ -855,7 +944,7 @@ function renderFoodDatabase() {
   document.getElementById("foodNoResults").classList.toggle("hidden", foods.length > 0);
 
   grid.innerHTML = foods.map(food => `
-    <button type="button" class="food-option ${food.id === selectedFoodId ? "selected" : ""}" data-select-food="${escapeHTML(food.id)}" aria-pressed="${food.id === selectedFoodId}">
+    <button type="button" class="food-option ${food.id === selectedFoodId ? "selected" : ""}" data-select-food="${escapeHTML(food.id)}">
       <span class="food-option-top">
         <span>
           <strong>${escapeHTML(food.name)}</strong>
@@ -864,11 +953,12 @@ function renderFoodDatabase() {
         <span class="food-kcal">${Math.round(food.kcal)} kcal</span>
       </span>
       <span class="food-macros">
-        <span>P <b>${formatDecimal(food.protein)}</b></span>
-        <span>C <b>${formatDecimal(food.carbs)}</b></span>
-        <span>F <b>${formatDecimal(food.fat)}</b></span>
+        <span class="macro-tag p">P <b>${formatDecimal(food.protein)}g</b></span>
+        <span class="macro-tag c">C <b>${formatDecimal(food.carbs)}g</b></span>
+        <span class="macro-tag f">F <b>${formatDecimal(food.fat)}g</b></span>
       </span>
     </button>`).join("");
+
   grid.querySelectorAll("[data-select-food]").forEach(button =>
     button.addEventListener("click", () => selectFood(button.dataset.selectFood))
   );
@@ -880,10 +970,11 @@ function selectFood(foodId) {
   selectedFoodId = foodId;
   document.getElementById("selectedFoodPanel").classList.remove("hidden");
   document.getElementById("selectedFoodName").textContent = food.name;
-  document.getElementById("selectedFoodServing").textContent = `${food.note} · nutrition per 100 g`;
+  document.getElementById("selectedFoodServing").textContent = `${food.note} · nutrition per 100g`;
   document.getElementById("foodAmount").value = "100";
   renderFoodDatabase();
   updateSelectedFoodPreview();
+  document.getElementById("selectedFoodPanel")?.scrollIntoView({ behavior: "smooth" });
 }
 
 function updateSelectedFoodPreview() {
@@ -896,7 +987,7 @@ function updateSelectedFoodPreview() {
   document.getElementById("previewCarbs").textContent = `${formatDecimal(m.carbs)} g`;
   document.getElementById("previewFat").textContent = `${formatDecimal(m.fat)} g`;
   document.getElementById("previewFiber").textContent = `${formatDecimal(m.fiber)} g`;
-  document.getElementById("foodCalculationHint").textContent = `Calculated for ${grams} g. ${food.note}.`;
+  document.getElementById("foodCalculationHint").textContent = `Calculated for ${grams}g. ${food.note}.`;
 }
 
 function addSelectedFoodToDiary() {
@@ -941,9 +1032,18 @@ document.getElementById("closeSelectedFood").addEventListener("click", () =>
 );
 document.getElementById("addSelectedFood").addEventListener("click", addSelectedFoodToDiary);
 
-/* =========================================================
-   8. CUSTOM FOOD AND DIARY LIST
-========================================================= */
+// Meal Cards "Add" Buttons (Image 1)
+document.querySelectorAll("[data-add-meal]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const mealType = btn.dataset.addMeal;
+    const select = document.getElementById("foodMealType");
+    if (select) select.value = mealType;
+    document.getElementById("foodSearchPanel")?.scrollIntoView({ behavior: "smooth" });
+    document.getElementById("foodSearch")?.focus();
+  });
+});
+
+// Custom Food Submission
 document.getElementById("foodForm").addEventListener("submit", event => {
   event.preventDefault();
   const entry = {
@@ -955,7 +1055,7 @@ document.getElementById("foodForm").addEventListener("submit", event => {
     protein: numberValue(document.getElementById("foodProtein").value),
     carbs: numberValue(document.getElementById("foodCarbs").value),
     fat: numberValue(document.getElementById("foodFat").value),
-    fiber: numberValue(document.getElementById("foodFiber").value),
+    fiber: 0,
     source: "custom"
   };
   if (!entry.name) return;
@@ -969,6 +1069,7 @@ document.getElementById("foodForm").addEventListener("submit", event => {
   renderDashboard();
 });
 
+// Render Nutrition Screen & SVG Rings (Image 1)
 function renderFood() {
   const today = todayString();
   const entries = foodEntries.filter(entry => entry.date === today);
@@ -977,61 +1078,80 @@ function renderFood() {
     calories: sum("calories"),
     protein: sum("protein"),
     carbs: sum("carbs"),
-    fat: sum("fat"),
-    fiber: sum("fiber")
+    fat: sum("fat")
   };
 
-  document.getElementById("foodCaloriesTotal").textContent = Math.round(totals.calories).toLocaleString("en-IN");
-  document.getElementById("foodProteinTotal").textContent = formatDecimal(totals.protein);
-  document.getElementById("foodCarbsTotal").textContent = formatDecimal(totals.carbs);
-  document.getElementById("foodFatTotal").textContent = formatDecimal(totals.fat);
-  document.getElementById("foodFiberTotal").textContent = formatDecimal(totals.fiber);
-  document.getElementById("foodWaterTotal").textContent = waterEntries
-    .filter(entry => entry.date === today)
-    .reduce((total, entry) => total + numberValue(entry.amount), 0);
-  document.getElementById("foodDateLabel").textContent = formatDate(today);
+  // Main Calorie Ring (Radius 85, Circumference 534.07)
+  const mainRing = document.getElementById("nutritionMainRingProgress");
+  const calTotalEl = document.getElementById("foodCaloriesTotal");
+  if (calTotalEl) calTotalEl.textContent = Math.round(totals.calories).toLocaleString("en-US");
+  if (mainRing) {
+    const circumference = 534.07;
+    const progress = Math.min(1, totals.calories / userPrefs.calorieGoal);
+    mainRing.style.strokeDashoffset = String(circumference - circumference * progress);
+  }
 
-  const barConfig = [
-    ["foodCaloriesTrack", totals.calories, 2500],
-    ["foodProteinTrack", totals.protein, 120],
-    ["foodCarbsTrack", totals.carbs, 300],
-    ["foodFatTrack", totals.fat, 80],
-    ["foodFiberTrack", totals.fiber, 30]
-  ];
-  barConfig.forEach(([id, value, max]) => {
-    const el = document.getElementById(id);
-    if (el) el.style.width = `${Math.min(100, Math.max(0, (value / max) * 100))}%`;
+  // 3 Mini Macro Rings (Radius 32, Circumference 201.06) (Image 1)
+  const miniCircumference = 201.06;
+
+  // Protein Ring (Cyan)
+  document.getElementById("foodProteinTotal").textContent = Math.round(totals.protein);
+  const proteinRing = document.getElementById("miniProteinRing");
+  if (proteinRing) {
+    const pProgress = Math.min(1, totals.protein / 140);
+    proteinRing.style.strokeDashoffset = String(miniCircumference - miniCircumference * pProgress);
+  }
+
+  // Carbs Ring (Amber)
+  document.getElementById("foodCarbsTotal").textContent = Math.round(totals.carbs);
+  const carbsRing = document.getElementById("miniCarbsRing");
+  if (carbsRing) {
+    const cProgress = Math.min(1, totals.carbs / 250);
+    carbsRing.style.strokeDashoffset = String(miniCircumference - miniCircumference * cProgress);
+  }
+
+  // Fat Ring (Rose)
+  document.getElementById("foodFatTotal").textContent = Math.round(totals.fat);
+  const fatRing = document.getElementById("miniFatRing");
+  if (fatRing) {
+    const fProgress = Math.min(1, totals.fat / 70);
+    fatRing.style.strokeDashoffset = String(miniCircumference - miniCircumference * fProgress);
+  }
+
+  // Update Individual Meal Cards (Breakfast, Lunch, Dinner, Snacks)
+  const mealSums = { Breakfast: 0, Lunch: 0, Dinner: 0, Snacks: 0 };
+  entries.forEach(entry => {
+    const meal = entry.meal || "Snacks";
+    if (mealSums[meal] !== undefined) mealSums[meal] += numberValue(entry.calories);
+    else mealSums.Snacks += numberValue(entry.calories);
   });
 
+  const bEl = document.getElementById("mealKcalBreakfast");
+  const lEl = document.getElementById("mealKcalLunch");
+  const dEl = document.getElementById("mealKcalDinner");
+  const sEl = document.getElementById("mealKcalSnacks");
+  if (bEl) bEl.textContent = Math.round(mealSums.Breakfast);
+  if (lEl) lEl.textContent = Math.round(mealSums.Lunch);
+  if (dEl) dEl.textContent = Math.round(mealSums.Dinner);
+  if (sEl) sEl.textContent = Math.round(mealSums.Snacks);
+
+  // Render Logged Items List
   const list = document.getElementById("foodList");
   if (!entries.length) {
-    list.innerHTML = `<div class="empty-state">No meals logged today. Search the built-in food list above to add your first entry.</div>`;
+    list.innerHTML = `<div class="empty-state">No foods logged today. Search the verified catalog or tap + Add above.</div>`;
     return;
   }
   const sortedEntries = entries.slice().reverse();
   list.innerHTML = sortedEntries.map(entry => {
-    const portion = entry.amount ? `${numberValue(entry.amount)} g` : "Custom portion";
+    const portion = entry.amount ? `${numberValue(entry.amount)}g` : "Custom portion";
     return `
-      <div class="entry-row food-entry-row">
-        <div class="entry-copy food-entry-copy">
-          <div class="food-entry-top">
-            <div>
-              <div class="food-entry-title">
-                <strong>${escapeHTML(entry.name)}</strong>
-                <span class="meal-badge">${escapeHTML(entry.meal || "Meal")}</span>
-              </div>
-              <span class="food-entry-amount">${portion}${entry.source === "database" ? " · calculated from database" : " · custom entry"}</span>
-            </div>
-          </div>
-          <div class="food-entry-macros">
-            <span>${Math.round(numberValue(entry.calories))} kcal</span>
-            <span>P ${formatDecimal(numberValue(entry.protein))}g</span>
-            <span>C ${formatDecimal(numberValue(entry.carbs))}g</span>
-            <span>F ${formatDecimal(numberValue(entry.fat))}g</span>
-            <span>Fibre ${formatDecimal(numberValue(entry.fiber))}g</span>
-          </div>
+      <div class="entry-row">
+        <div class="entry-copy">
+          <strong>${escapeHTML(entry.name)} · <span style="color:var(--accent);">${escapeHTML(entry.meal || "Meal")}</span></strong>
+          <span>${portion} · P ${formatDecimal(numberValue(entry.protein))}g · C ${formatDecimal(numberValue(entry.carbs))}g · F ${formatDecimal(numberValue(entry.fat))}g</span>
         </div>
-        <button class="delete-button" data-delete-food="${escapeHTML(entry.id)}" aria-label="Delete ${escapeHTML(entry.name)}">Delete</button>
+        <div class="entry-value">${Math.round(numberValue(entry.calories))}<small>kcal</small></div>
+        <button class="delete-button" data-delete-food="${escapeHTML(entry.id)}" aria-label="Delete entry">✕</button>
       </div>`;
   }).join("");
 
@@ -1045,24 +1165,21 @@ function renderFood() {
   );
 }
 
-/* =========================================================
-   9. WATER TRACKER
-========================================================= */
+
+/* ==========================================================================
+   SECTION 7: HYDRATION & BODY WEIGHT TRACKERS
+   ========================================================================== */
 function addWater() {
   waterEntries.push({ id: makeId(), date: todayString(), amount: 250 });
   if (!writeStorage(STORAGE_KEYS.water, waterEntries)) {
     waterEntries.pop();
     return;
   }
-  renderFood();
   renderDashboard();
+  renderFood();
 }
-document.getElementById("addWaterButton").addEventListener("click", addWater);
-document.getElementById("dashboardWaterButton").addEventListener("click", addWater);
+document.getElementById("dashboardWaterButton")?.addEventListener("click", addWater);
 
-/* =========================================================
-   10. BODY WEIGHT TRACKER
-========================================================= */
 document.getElementById("weightDate").value = todayString();
 document.getElementById("weightForm").addEventListener("submit", event => {
   event.preventDefault();
@@ -1085,17 +1202,17 @@ function renderWeight() {
   const container = document.getElementById("weightHistory");
   const sorted = bodyWeights.slice().sort((a, b) => b.date.localeCompare(a.date));
   if (!sorted.length) {
-    container.innerHTML = `<div class="empty-state">No body-weight measurements yet. Add your first entry above.</div>`;
+    container.innerHTML = `<div class="empty-state">No body-weight measurements yet. Add your morning weight above.</div>`;
     return;
   }
   container.innerHTML = sorted.map(entry => `
     <div class="entry-row">
       <div class="entry-copy">
         <strong>${formatDate(entry.date)}</strong>
-        <span>Body-weight measurement</span>
+        <span>Body Weight Log</span>
       </div>
-      <div class="entry-value">${numberValue(entry.weight).toFixed(1)} kg</div>
-      <button class="delete-button" data-delete-weight="${escapeHTML(entry.id)}" aria-label="Delete entry">Delete</button>
+      <div class="entry-value">${numberValue(entry.weight).toFixed(1)} <small>kg</small></div>
+      <button class="delete-button" data-delete-weight="${escapeHTML(entry.id)}" aria-label="Delete entry">✕</button>
     </div>`).join("");
 
   container.querySelectorAll("[data-delete-weight]").forEach(button =>
@@ -1108,9 +1225,115 @@ function renderWeight() {
   );
 }
 
-/* =========================================================
-   11. PROGRESS CHART
-========================================================= */
+
+/* ==========================================================================
+   SECTION 8: DASHBOARD OVERVIEW & SPARKLINE CHARTS (IMAGE 3)
+   ========================================================================== */
+function renderDashboard() {
+  updateHeaderGreeting();
+  const today = todayString();
+  const todayFoods = foodEntries.filter(entry => entry.date === today);
+  const calories = todayFoods.reduce((sum, entry) => sum + numberValue(entry.calories), 0);
+  const protein = todayFoods.reduce((sum, entry) => sum + numberValue(entry.protein), 0);
+  const water = waterEntries.filter(entry => entry.date === today).reduce((sum, entry) => sum + numberValue(entry.amount), 0);
+  const latestWeight = bodyWeights.slice().sort((a, b) => b.date.localeCompare(a.date))[0];
+
+  const goalLabel = document.getElementById("ringGoalValue");
+  if (goalLabel) goalLabel.textContent = `/ ${userPrefs.calorieGoal.toLocaleString("en-US")} cal`;
+  window.FitScene?.setProgress(Math.min(1, calories / userPrefs.calorieGoal));
+
+  // Hero Calorie Ring (Radius 85, Circumference 534.07) (Image 3)
+  const heroRing = document.getElementById("heroRingProgress");
+  const dashCalEl = document.getElementById("dashboardCalories");
+  const dashCalSmall = document.getElementById("dashboardCaloriesSmall");
+  if (dashCalEl) dashCalEl.textContent = Math.round(calories).toLocaleString("en-US");
+  if (dashCalSmall) dashCalSmall.textContent = Math.round(calories);
+
+  if (heroRing) {
+    const circumference = 534.07;
+    const progress = Math.min(1, calories / userPrefs.calorieGoal);
+    heroRing.style.strokeDashoffset = String(circumference - circumference * progress);
+  }
+
+  // 3-Metric Summary Strip (Consumed | Protein | Remaining)
+  const remaining = Math.max(0, userPrefs.calorieGoal - Math.round(calories));
+  const sConsumed = document.getElementById("stripConsumed");
+  const sBurned = document.getElementById("stripBurned");
+  const sRemaining = document.getElementById("stripRemaining");
+  if (sConsumed) sConsumed.textContent = Math.round(calories).toLocaleString("en-US");
+  if (sBurned) sBurned.textContent = `${Math.round(protein)}g`;
+  if (sRemaining) sRemaining.textContent = remaining.toLocaleString("en-US");
+
+  // Trend Cards
+  const dashWeightEl = document.getElementById("dashboardWeight");
+  if (dashWeightEl) dashWeightEl.textContent = latestWeight ? numberValue(latestWeight.weight).toFixed(1) : "—";
+
+  // Hydration Strip
+  const waterLabel = document.getElementById("dashboardWaterLabel");
+  if (waterLabel) waterLabel.textContent = `${water} ml of ${userPrefs.waterGoal.toLocaleString("en-US")} ml`;
+
+  // Mini Sparkline SVG Charts (Image 3)
+  renderSparklines();
+
+  // Recent Workouts
+  const recent = document.getElementById("recentWorkoutLogs");
+  const logs = workoutLogs.slice().sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3);
+  if (!logs.length) {
+    recent.innerHTML = `
+      <div class="empty-icon-wrap" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 5v14M18 5v14M2 9v6M22 9v6M6 12h12"/></svg>
+      </div>
+      <p>No workouts logged yet. Complete a training session to see your progress here.</p>`;
+    return;
+  }
+  recent.innerHTML = logs.map(log => `
+    <div class="entry-row">
+      <div class="entry-copy">
+        <strong>${escapeHTML(log.dayTitle || "Workout")}</strong>
+        <span>${escapeHTML(log.programName || "Training")} · ${formatDate(log.date)}</span>
+      </div>
+      <div class="entry-value">${log.completedSetCount || (log.exercises||[]).length} <small>sets done</small></div>
+    </div>`).join("");
+}
+
+// Mini SVG Sparklines for Image 3 Dashboard
+function renderSparklines() {
+  const weightBox = document.getElementById("weightSparkline");
+  const calorieBox = document.getElementById("calorieSparkline");
+
+  if (weightBox) {
+    const weights = bodyWeights.slice(-7).map(w => numberValue(w.weight));
+    const data = weights.length >= 2 ? weights : [74.5, 74.2, 74.0, 73.8, 73.6];
+    const min = Math.min(...data) - 0.5;
+    const max = Math.max(...data) + 0.5;
+    const points = data.map((v, i) => {
+      const x = (i / (data.length - 1)) * 140 + 4;
+      const y = 24 - ((v - min) / (max - min)) * 20;
+      return `${x},${y}`;
+    }).join(" ");
+    weightBox.innerHTML = `
+      <svg viewBox="0 0 148 28">
+        <polyline points="${points}" fill="none" stroke="#00DDF5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`;
+  }
+
+  if (calorieBox) {
+    calorieBox.innerHTML = `
+      <svg viewBox="0 0 148 28">
+        <rect x="10" y="10" width="10" height="18" rx="3" fill="#242832"/>
+        <rect x="34" y="6" width="10" height="22" rx="3" fill="#242832"/>
+        <rect x="58" y="14" width="10" height="14" rx="3" fill="#242832"/>
+        <rect x="82" y="4" width="10" height="24" rx="3" fill="#00DDF5"/>
+        <rect x="106" y="8" width="10" height="20" rx="3" fill="#00DDF5"/>
+        <rect x="130" y="12" width="10" height="16" rx="3" fill="#242832"/>
+      </svg>`;
+  }
+}
+
+
+/* ==========================================================================
+   SECTION 9: PROGRESS ANALYTICS & SVG CHARTS
+   ========================================================================== */
 function getLoggedExerciseNames() {
   const names = new Set();
   workoutLogs.forEach(log => (log.exercises || []).forEach(exercise => names.add(exercise.name)));
@@ -1147,8 +1370,8 @@ function drawProgressChart(exerciseName, metric) {
   const chart = document.getElementById("progressChart");
   const summary = document.getElementById("progressSummary");
   if (!exerciseName) {
-    summary.textContent = "Your chart will appear after you save a workout.";
-    chart.innerHTML = `<div class="chart-empty">No workout data yet. Open a workout and log your sets.</div>`;
+    summary.textContent = "Your performance curve will appear here once you log sets.";
+    chart.innerHTML = `<div class="empty-state">No workout data logged yet. Open Workouts and tap Log Set.</div>`;
     renderProgressHistory();
     return;
   }
@@ -1164,19 +1387,17 @@ function drawProgressChart(exerciseName, metric) {
   }).filter(session => session.value > 0).sort((a, b) => a.date.localeCompare(b.date));
 
   if (!sessions.length) {
-    summary.textContent = `No completed set data for ${exerciseName} yet.`;
-    chart.innerHTML = `<div class="chart-empty">Tick completed sets and save the workout to track this exercise.</div>`;
+    summary.textContent = `No verified set records for ${exerciseName} yet.`;
+    chart.innerHTML = `<div class="empty-state">Log sets for this exercise and finalize the session to see chart curves.</div>`;
     renderProgressHistory();
     return;
   }
   const best = Math.max(...sessions.map(session => session.value));
-  const first = sessions[0].value;
   const latest = sessions[sessions.length - 1].value;
   const unit = metric === "weight" ? "kg" : "reps";
-  const change = latest - first;
-  summary.textContent = `Best: ${formatDecimal(best)} ${unit} · Latest: ${formatDecimal(latest)} ${unit} · Change: ${change > 0 ? "+" : ""}${formatDecimal(change)} ${unit}`;
+  summary.textContent = `All-Time Best: ${formatDecimal(best)} ${unit} · Latest Session: ${formatDecimal(latest)} ${unit}`;
 
-  const width = 720, height = 245, paddingLeft = 40, paddingRight = 20, paddingTop = 24, paddingBottom = 40;
+  const width = 720, height = 240, paddingLeft = 40, paddingRight = 20, paddingTop = 24, paddingBottom = 40;
   const chartWidth = width - paddingLeft - paddingRight;
   const chartHeight = height - paddingTop - paddingBottom;
   const maxValue = Math.max(...sessions.map(session => session.value), 1);
@@ -1191,25 +1412,21 @@ function drawProgressChart(exerciseName, metric) {
   const grid = Array.from({ length: 5 }, (_, index) => {
     const y = paddingTop + (index / 4) * chartHeight;
     const value = yMax - (index / 4) * yMax;
-    return `<line x1="${paddingLeft}" y1="${y}" x2="${width - paddingRight}" y2="${y}" stroke="#252932" stroke-dasharray="3 4"/><text x="${paddingLeft - 8}" y="${y + 4}" text-anchor="end" fill="#808896" font-size="10">${value.toFixed(0)}</text>`;
+    return `<line x1="${paddingLeft}" y1="${y}" x2="${width - paddingRight}" y2="${y}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3 4"/><text x="${paddingLeft - 8}" y="${y + 4}" text-anchor="end" fill="#8492a6" font-size="10" font-family="'JetBrains Mono', monospace">${value.toFixed(0)}</text>`;
   }).join("");
 
   const linePoints = points.map(point => `${point.x},${point.y}`).join(" ");
   const dots = points.map(point =>
-    `<circle cx="${point.x}" cy="${point.y}" r="4.5" fill="#00DDF5" stroke="#090A0C" stroke-width="2"><title>${escapeHTML(formatDate(point.date))}: ${formatDecimal(point.value)} ${unit}</title></circle>`
+    `<circle cx="${point.x}" cy="${point.y}" r="4.5" fill="#00DDF5" stroke="#07080a" stroke-width="2.5"></circle>`
   ).join("");
-  const labels = points.map((point, index) => {
-    if (points.length > 7 && index % 2 !== 0 && index !== points.length - 1) return "";
-    return `<text x="${point.x}" y="${height - 14}" text-anchor="middle" fill="#808896" font-size="10">${escapeHTML(point.date.slice(5))}</text>`;
-  }).join("");
+  const labels = points.map((point, index) =>
+    `<text x="${point.x}" y="${height - 14}" text-anchor="middle" fill="#8492a6" font-size="10" font-family="'JetBrains Mono', monospace">${escapeHTML(point.date.slice(5))}</text>`
+  ).join("");
 
-  chart.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Progress chart for ${escapeHTML(exerciseName)}">${grid}<polyline points="${linePoints}" fill="none" stroke="#00DDF5" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>${dots}${labels}</svg>`;
+  chart.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img">${grid}<polyline points="${linePoints}" fill="none" stroke="#00DDF5" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>${dots}${labels}</svg>`;
   renderProgressHistory();
 }
 
-/* =========================================================
-   12. WORKOUT HISTORY
-========================================================= */
 function renderProgressHistory() {
   const container = document.getElementById("progressHistory");
   const selectedExercise = document.getElementById("progressExercise").value;
@@ -1218,32 +1435,18 @@ function renderProgressHistory() {
   ).slice().sort((a, b) => b.date.localeCompare(a.date));
 
   if (!matchingLogs.length) {
-    container.innerHTML = `<div class="empty-state">Saved workout sessions will appear here.</div>`;
+    container.innerHTML = `<div class="empty-state">Saved training sessions will be archived here.</div>`;
     return;
   }
-  container.innerHTML = matchingLogs.map(log => {
-    const exercises = (log.exercises || []).filter(exercise => !selectedExercise || exercise.name === selectedExercise);
-    const summary = exercises.map(exercise => {
-      const valid = (exercise.sets || []).filter(isCompletedSet);
-      if (!valid.length) return `${exercise.name}: no completed sets`;
-      const maxWeight = Math.max(0, ...valid.map(set => numberValue(set.weight)));
-      const maxReps = Math.max(0, ...valid.map(set => numberValue(set.reps)));
-      const count = valid.length;
-      return `${exercise.name}: ${maxWeight}kg × ${maxReps} reps (${count} sets)`;
-    }).join(" · ");
-    const completeCount = log.completedSetCount ?? (log.exercises || []).flatMap(exercise => exercise.sets || []).filter(isCompletedSet).length;
-
-    return `
-      <div class="entry-row">
-        <div class="entry-copy">
-          <strong>${escapeHTML(log.dayTitle || "Workout")} · ${formatDate(log.date)}</strong>
-          <span>${escapeHTML(log.programName || "Training")} · ${completeCount} completed sets</span>
-          <span>${escapeHTML(summary)}</span>
-          ${log.notes ? `<span>Notes: ${escapeHTML(log.notes)}</span>` : ""}
-        </div>
-        <button class="delete-button" data-delete-workout="${escapeHTML(log.id)}" aria-label="Delete workout record">Delete</button>
-      </div>`;
-  }).join("");
+  container.innerHTML = matchingLogs.map(log => `
+    <div class="entry-row">
+      <div class="entry-copy">
+        <strong>${escapeHTML(log.dayTitle || "Workout")} · ${formatDate(log.date)}</strong>
+        <span>${escapeHTML(log.programName || "Training")} · ${log.completedSetCount || (log.exercises||[]).length} sets completed</span>
+        ${log.notes ? `<span>Notes: ${escapeHTML(log.notes)}</span>` : ""}
+      </div>
+      <button class="delete-button" data-delete-workout="${escapeHTML(log.id)}" aria-label="Delete entry">✕</button>
+    </div>`).join("");
 
   container.querySelectorAll("[data-delete-workout]").forEach(button =>
     button.addEventListener("click", () => {
@@ -1255,50 +1458,19 @@ function renderProgressHistory() {
   );
 }
 
-/* =========================================================
-   13. DASHBOARD
-========================================================= */
-function renderDashboard() {
-  const today = todayString();
-  const todayFoods = foodEntries.filter(entry => entry.date === today);
-  const calories = todayFoods.reduce((sum, entry) => sum + numberValue(entry.calories), 0);
-  const protein = todayFoods.reduce((sum, entry) => sum + numberValue(entry.protein), 0);
-  const water = waterEntries.filter(entry => entry.date === today).reduce((sum, entry) => sum + numberValue(entry.amount), 0);
-  const latestWeight = bodyWeights.slice().sort((a, b) => b.date.localeCompare(a.date))[0];
 
-  document.getElementById("dashboardCalories").textContent = Math.round(calories);
-  document.getElementById("dashboardProtein").textContent = formatDecimal(protein);
-  document.getElementById("dashboardWater").textContent = water;
-  document.getElementById("dashboardWeight").textContent = latestWeight ? numberValue(latestWeight.weight).toFixed(1) : "—";
-
-  const recent = document.getElementById("recentWorkoutLogs");
-  const logs = workoutLogs.slice().sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4);
-  if (!logs.length) {
-    recent.innerHTML = `<div class="empty-state">No workouts logged yet. Choose a program and save your first session.</div>`;
-    return;
-  }
-  recent.innerHTML = logs.map(log => `
-    <div class="entry-row">
-      <div class="entry-copy">
-        <strong>${escapeHTML(log.dayTitle || "Workout")}</strong>
-        <span>${escapeHTML(log.programName || "Training")} · ${formatDate(log.date)}</span>
-        <span>${log.completedSetCount ?? (log.exercises || []).flatMap(exercise => exercise.sets || []).filter(isCompletedSet).length} completed sets</span>
-      </div>
-      <div class="entry-value">${(log.exercises || []).length}<small>exercises</small></div>
-    </div>`).join("");
-}
-
-/* =========================================================
-   14. INITIALIZE APP
-========================================================= */
+/* ==========================================================================
+   SECTION 10: APPLICATION INITIALIZATION BOOTSTRAPPER
+   ========================================================================== */
 function initializeApp() {
+  updateHeaderGreeting();
   renderPrograms();
   renderDashboard();
   renderFoodDatabase();
   renderFood();
   renderWeight();
   renderProgress();
-  document.getElementById("weightDate").value = todayString();
 }
 
+// Kick off the application
 initializeApp();

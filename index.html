@@ -3,182 +3,371 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#090A0C">
-  <meta name="description" content="FitTrack fitness and nutrition tracker">
-  <title>FitTrack | Fitness & Nutrition</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <meta name="theme-color" content="#07080a">
+  <meta name="description" content="FitTrack Pro Max - Professional-tier fitness, workout and nutrition tracking platform.">
+  <title>FitTrack | Pro Max Fitness & Nutrition</title>
+
+  <!-- Google Fonts: Plus Jakarta Sans (Headings & UI) & JetBrains Mono (Numbers/Metrics) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+  <!-- Core Design System Stylesheet -->
   <link rel="stylesheet" href="demo2.css">
 </head>
 
 <body>
-  <!-- Overlay backdrop for mobile drawer navigation -->
+
+  <!-- ==========================================================================
+       SECTION 1: OVERLAYS & BACKDROPS (MOBILE DRAWER & QUICK ACTION MODAL)
+       ========================================================================== -->
+  <!-- Dark blur backdrop when sidebar drawer opens on mobile -->
   <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
 
+  <!-- Dark blur backdrop when Center Quick Add Action Sheet opens -->
+  <div class="action-sheet-backdrop" id="actionSheetBackdrop" aria-hidden="true"></div>
+
+
   <div class="app-layout">
-    <aside class="sidebar" id="sidebar" aria-label="Main sidebar navigation">
+
+    <!-- ==========================================================================
+         SECTION 2: SIDEBAR & NAVIGATION (DESKTOP WORKSPACE)
+         ========================================================================== -->
+    <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+      <!-- Sidebar Brand Header -->
       <div class="sidebar-header">
-        <a class="brand" href="#dashboard" data-go="dashboard" aria-label="FitTrack dashboard">
-          <span class="brand-icon">F</span><span>FitTrack<span class="brand-dot">.</span></span>
+        <a class="brand" href="#dashboard" data-go="dashboard" aria-label="FitTrack Home">
+          <div class="brand-icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 20V10M12 20V4M6 20v-6"/>
+            </svg>
+          </div>
+          <span class="brand-name">FitTrack<span class="brand-dot">.</span></span>
         </a>
-        <button class="sidebar-close-button" id="sidebarCloseButton" aria-label="Close navigation menu">✕</button>
+        <button class="sidebar-close-button" id="sidebarCloseButton" aria-label="Close navigation menu">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
       </div>
 
+      <!-- Navigation Links -->
       <p class="nav-label">WORKSPACE</p>
-      <nav class="navigation" aria-label="Main navigation">
-        <button class="nav-link active" data-page="dashboard"><span class="nav-icon" aria-hidden="true">◫</span> Dashboard</button>
-        <button class="nav-link" data-page="workouts"><span class="nav-icon" aria-hidden="true">↗</span> Workouts</button>
-        <button class="nav-link" data-page="food"><span class="nav-icon" aria-hidden="true">◉</span> Food diary</button>
-        <button class="nav-link" data-page="weight"><span class="nav-icon" aria-hidden="true">⚖</span> Body weight</button>
-        <button class="nav-link" data-page="progress"><span class="nav-icon" aria-hidden="true">⌁</span> Progress</button>
+      <nav class="navigation" aria-label="Primary navigation">
+        <button class="nav-link active" data-page="dashboard">
+          <span class="nav-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+              <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+              <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+              <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+            </svg>
+          </span>
+          <span class="nav-text">Dashboard</span>
+        </button>
+
+        <button class="nav-link" data-page="workouts">
+          <span class="nav-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 5v14M18 5v14M2 9v6M22 9v6M6 12h12"/>
+            </svg>
+          </span>
+          <span class="nav-text">Workouts</span>
+        </button>
+
+        <button class="nav-link" data-page="food">
+          <span class="nav-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+            </svg>
+          </span>
+          <span class="nav-text">Nutrition</span>
+        </button>
+
+        <button class="nav-link" data-page="weight">
+          <span class="nav-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="18" rx="4"/>
+              <path d="M12 7a5 5 0 0 0-5 5h10a5 5 0 0 0-5-5Z"/>
+              <circle cx="12" cy="12" r="1.5"/>
+            </svg>
+          </span>
+          <span class="nav-text">Body weight</span>
+        </button>
+
+        <button class="nav-link" data-page="progress">
+          <span class="nav-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
+              <polyline points="16 7 22 7 22 13"></polyline>
+            </svg>
+          </span>
+          <span class="nav-text">Progress</span>
+        </button>
+
+        <a class="nav-link" href="landing.html" style="margin-top: 6px; border: 1px dashed rgba(0, 221, 245, 0.35); color: var(--accent);">
+          <span class="nav-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+          </span>
+          <span class="nav-text">Motion Landing ↗</span>
+        </a>
       </nav>
 
+      <!-- Sidebar Bottom Insight Card -->
       <div class="sidebar-bottom">
         <div class="sidebar-note">
-          <span class="note-icon" aria-hidden="true">✦</span>
-          <strong>Consistency wins.</strong>
-          <p>Train with purpose. Track your progress.</p>
+          <div class="note-icon-wrap" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+          </div>
+          <strong>Consistency Wins.</strong>
+          <p>Every set logged builds lasting physical transformation.</p>
         </div>
-        <p class="sidebar-footer">FITTRACK · YOUR FITNESS SPACE</p>
+        <p class="sidebar-footer">FITTRACK · PRO MAX EDITION</p>
       </div>
     </aside>
 
-    <main class="main-content">
+
+    <!-- ==========================================================================
+         SECTION 3: MAIN APP CONTENT WRAPPER & TOPBARS
+         ========================================================================== -->
+    <main class="main-content" id="mainContent">
+
+      <!-- Desktop View Topbar -->
       <header class="topbar">
-        <button class="menu-button" id="menuButton" aria-label="Open navigation menu" aria-expanded="false">
-          <span class="menu-bar"></span>
-          <span class="menu-bar"></span>
-          <span class="menu-bar"></span>
-        </button>
         <div class="topbar-title-wrap">
-          <p class="topbar-eyebrow">YOUR PERSONAL FITNESS SPACE</p>
+          <p class="topbar-eyebrow">FITNESS INTELLIGENCE PLATFORM</p>
           <h1 id="pageTitle">Dashboard</h1>
         </div>
-        <div class="topbar-date" id="todayLabel">Today</div>
+        <div class="topbar-actions">
+          <div class="topbar-date" id="todayLabel">Today</div>
+          <div class="avatar-circle" title="User Profile">FT</div>
+        </div>
       </header>
 
-      <!-- DASHBOARD -->
-      <section class="page-section active-page" id="dashboard">
-        <div class="welcome-banner">
-          <div class="welcome-banner-content">
-            <span class="eyebrow">YOUR JOURNEY, YOUR RULES</span>
-            <h2>Build strength.<br>Track every win.</h2>
-            <p>Your training, nutrition and progress in one place.</p>
-            <button class="primary-button" data-go="workouts">
-              Explore workouts <span aria-hidden="true">↗</span>
-            </button>
+      <!-- Mobile & Tablet Native App Header Row -->
+      <div class="app-header-row">
+        <button class="menu-button" id="menuButton" aria-label="Toggle navigation drawer" aria-expanded="false">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <line x1="4" y1="7" x2="20" y2="7"></line>
+            <line x1="4" y1="12" x2="16" y2="12"></line>
+            <line x1="4" y1="17" x2="20" y2="17"></line>
+          </svg>
+        </button>
+
+        <div class="greeting-block">
+          <h2 id="dynamicGreeting">Good morning!</h2>
+          <p id="dynamicDateLabel">Monday, October 15, 2026</p>
+        </div>
+
+        <div class="header-action-group">
+          <button type="button" class="icon-badge-btn" id="notifBell" aria-label="Notifications">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            <span class="badge-dot" aria-hidden="true"></span>
+          </button>
+          <div class="avatar-circle" title="User Profile">FT</div>
+        </div>
+      </div>
+
+
+      <!-- ==========================================================================
+           SECTION 4: PAGE 1 - DASHBOARD (HERO CALORIE RING, METRICS, TRENDS)
+           ========================================================================== -->
+      <section class="page-section active-page" id="dashboard" aria-labelledby="dashboardHeading">
+        <h2 id="dashboardHeading" class="visually-hidden">Dashboard Overview</h2>
+
+        <!-- 3D gym stage (Three.js, with static fallback) -->
+        <article class="stage3d-card" aria-label="Interactive 3D barbell">
+          <canvas id="gymStage" aria-hidden="true"></canvas>
+          <svg class="stage-fallback" viewBox="0 0 320 120" aria-hidden="true"><g fill="none" stroke="#00ddf5" stroke-width="3" stroke-linecap="round"><path d="M20 60h280"/><rect x="62" y="22" width="14" height="76" rx="4"/><rect x="82" y="32" width="12" height="56" rx="4"/><rect x="244" y="22" width="14" height="76" rx="4"/><rect x="226" y="32" width="12" height="56" rx="4"/></g></svg>
+          <p class="stage-hint"><strong>Drag to rotate.</strong> The plate rims glow brighter as you approach today's calorie goal.</p>
+        </article>
+
+        <!-- Hero Animated Calorie Ring Card -->
+        <article class="hero-ring-card" aria-label="Daily calorie progress ring">
+          <div class="ring-wrapper">
+            <svg class="ring-svg" viewBox="0 0 200 200">
+              <circle class="ring-bg" cx="100" cy="100" r="85"></circle>
+              <circle class="ring-progress" id="heroRingProgress" cx="100" cy="100" r="85"
+                stroke-dasharray="534.07" stroke-dashoffset="534.07"></circle>
+            </svg>
+            <div class="ring-center-content">
+              <span class="ring-main-value" id="dashboardCalories">0</span>
+              <span class="ring-goal-value" id="ringGoalValue">/ 2,200 cal</span>
+              <span class="ring-subtitle">Calories Today</span>
+            </div>
           </div>
-          <div class="banner-art" aria-hidden="true">
-            <div class="art-ring"></div>
-            <div class="art-number">01</div>
-            <div class="art-caption">SHOW UP<br>EVERY DAY</div>
+        </article>
+
+        <!-- 3-Metric Summary Strip: Consumed | Protein | Remaining -->
+        <div class="macro-strip" aria-label="Daily calories and protein breakdown">
+          <div class="macro-strip-col">
+            <strong id="stripConsumed">0</strong>
+            <span>Consumed</span>
+          </div>
+          <div class="macro-strip-col">
+            <strong id="stripBurned">0g</strong>
+            <span>Protein</span>
+          </div>
+          <div class="macro-strip-col">
+            <strong id="stripRemaining">2,200</strong>
+            <span>Remaining</span>
           </div>
         </div>
 
-        <div class="section-heading">
-          <div>
-            <span class="eyebrow">TODAY AT A GLANCE</span>
-            <h2>Your daily overview</h2>
-          </div>
-        </div>
-
-        <div class="stats-grid">
-          <article class="stat-card">
-            <span class="stat-icon">◉</span>
-            <p>Calories logged</p>
-            <h3><span id="dashboardCalories">0</span> <small>kcal</small></h3>
-            <span class="stat-caption">From your food diary</span>
-          </article>
-          <article class="stat-card">
-            <span class="stat-icon">⌁</span>
-            <p>Protein logged</p>
-            <h3><span id="dashboardProtein">0</span> <small>g</small></h3>
-            <span class="stat-caption">Daily protein intake</span>
-          </article>
-          <article class="stat-card">
-            <span class="stat-icon">♧</span>
-            <p>Water logged</p>
-            <h3><span id="dashboardWater">0</span> <small>ml</small></h3>
-            <span class="stat-caption">Today's water intake</span>
-          </article>
-          <article class="stat-card">
-            <span class="stat-icon">↗</span>
-            <p>Latest body weight</p>
-            <h3><span id="dashboardWeight">—</span> <small>kg</small></h3>
-            <span class="stat-caption">Most recent entry</span>
-          </article>
-        </div>
-
-        <div class="dashboard-columns">
-          <article class="panel">
-            <div class="section-heading compact">
+        <!-- 2-Column Interactive Trend Cards (Weight Trend & Calories Trend) -->
+        <div class="dashboard-trend-grid">
+          <!-- Weight Trend Card -->
+          <div class="trend-card" data-go="weight" role="button" tabindex="0" aria-label="View weight trend">
+            <div class="trend-card-top">
               <div>
-                <span class="eyebrow">TRAINING</span>
-                <h2>Recent workouts</h2>
+                <strong>Weight Trend</strong>
+                <span>Last 7 days</span>
               </div>
-              <button class="text-button" data-go="progress">View progress ↗</button>
+              <div class="trend-icon-pill" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="3" width="20" height="18" rx="4"/>
+                  <path d="M12 7a5 5 0 0 0-5 5h10a5 5 0 0 0-5-5Z"/>
+                </svg>
+              </div>
             </div>
-            <div id="recentWorkoutLogs" class="empty-state">
-              No workouts logged yet. Complete a session to see it here.
+            <div class="trend-sparkline" id="weightSparkline">
+              <!-- Mini SVG line dynamic rendering -->
             </div>
-          </article>
+            <div class="trend-card-bottom">
+              <div class="trend-value"><span id="dashboardWeight">—</span> <small>kg</small></div>
+              <span class="trend-arrow" aria-hidden="true">›</span>
+            </div>
+          </div>
 
-          <article class="panel quick-panel">
-            <span class="eyebrow">QUICK ACTIONS</span>
-            <h2>Keep your routine moving</h2>
-            <button class="quick-action" data-go="food">
-              <span>◉</span>
-              <span><strong>Log a meal</strong><small>Track calories and protein</small></span>
-              <b>→</b>
-            </button>
-            <button class="quick-action" id="dashboardWaterButton">
-              <span>♧</span>
-              <span><strong>Drink water</strong><small>Add 250 ml to today's total</small></span>
-              <b>+</b>
-            </button>
-            <button class="quick-action" data-go="weight">
-              <span>⚖</span>
-              <span><strong>Log body weight</strong><small>Record today's measurement</small></span>
-              <b>→</b>
-            </button>
-          </article>
+          <!-- Calories Trend Card -->
+          <div class="trend-card" data-go="food" role="button" tabindex="0" aria-label="View nutrition log">
+            <div class="trend-card-top">
+              <div>
+                <strong>Nutrition Log</strong>
+                <span>Today's intake</span>
+              </div>
+              <div class="trend-icon-pill" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+                </svg>
+              </div>
+            </div>
+            <div class="trend-sparkline" id="calorieSparkline">
+              <!-- Mini SVG bars dynamic rendering -->
+            </div>
+            <div class="trend-card-bottom">
+              <div class="trend-value"><span id="dashboardCaloriesSmall">0</span> <small>cal</small></div>
+              <span class="trend-arrow" aria-hidden="true">›</span>
+            </div>
+          </div>
         </div>
+
+        <!-- Hydration Tracker Quick Card -->
+        <article class="hydration-strip-card" aria-label="Hydration tracker">
+          <div class="hydration-info">
+            <div class="hydration-icon-circle" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>
+              </svg>
+            </div>
+            <div>
+              <strong>Water Intake</strong>
+              <span id="dashboardWaterLabel">0 ml of 2,500 ml</span>
+            </div>
+          </div>
+          <button type="button" class="hydration-quick-btn" id="dashboardWaterButton">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>250 ml</span>
+          </button>
+        </article>
+
+        <!-- Recent Workouts Overview Panel -->
+        <article class="panel">
+          <div class="section-heading compact">
+            <div>
+              <span class="eyebrow">TRAINING HISTORY</span>
+              <h2>Recent Workouts</h2>
+            </div>
+            <button class="text-button" data-go="progress">
+              <span>View progress</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7V17"/></svg>
+            </button>
+          </div>
+          <div id="recentWorkoutLogs" class="empty-state">
+            <div class="empty-icon-wrap" aria-hidden="true">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 5v14M18 5v14M2 9v6M22 9v6M6 12h12"/></svg>
+            </div>
+            <p>No workouts logged yet. Complete a training session to see your progress here.</p>
+          </div>
+        </article>
       </section>
 
-      <!-- WORKOUTS -->
-      <section class="page-section" id="workouts">
+
+      <!-- ==========================================================================
+           SECTION 5: PAGE 2 - WORKOUTS & TRAINING (PROGRAMS, DAYS & SET LOGGING)
+           ========================================================================== -->
+      <section class="page-section" id="workouts" aria-labelledby="workoutsHeading">
+        <h2 id="workoutsHeading" class="visually-hidden">Workout Programs</h2>
+
+        <!-- Step 1: Program Selection View -->
         <div id="programList">
           <div class="page-intro">
-            <span class="eyebrow">TRAIN WITH A PLAN</span>
-            <h2>Choose your program</h2>
-            <p>Select a training program to view its workout days and exercises.</p>
+            <span class="eyebrow">STRUCTURED TRAINING</span>
+            <h2>Choose Your Program</h2>
+            <p>Select a goal-oriented plan built with science-backed volume, recovery periods, and progressive overload.</p>
           </div>
           <div class="program-grid" id="programGrid"></div>
         </div>
 
+        <!-- Step 2: Workout Days View -->
         <div id="dayView" class="hidden">
-          <button class="back-button" id="backToPrograms">← All programs</button>
+          <button class="back-button" id="backToPrograms" type="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 18-6-6 6-6"/></svg>
+            <span>All Programs</span>
+          </button>
           <div class="page-intro">
-            <span class="eyebrow">YOUR TRAINING PLAN</span>
-            <h2 id="selectedProgramTitle"></h2>
+            <span class="eyebrow">SELECTED SCHEDULE</span>
+            <h2 id="selectedProgramTitle">Program Days</h2>
             <p id="selectedProgramDescription"></p>
           </div>
           <div id="dayGrid" class="day-grid"></div>
         </div>
 
+        <!-- Step 3: Interactive Workout Session Detail (Set Logging Screen) -->
         <div id="workoutDetail" class="hidden">
-          <button class="back-button" id="backToDays">← Back to workout days</button>
+          <button class="back-button" id="backToDays" type="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 18-6-6 6-6"/></svg>
+            <span>Back to Workout Days</span>
+          </button>
+
           <div class="workout-heading">
-            <span class="eyebrow" id="workoutSubtitle"></span>
-            <h2 id="workoutTitle"></h2>
+            <span class="eyebrow" id="workoutSubtitle">Active Workout</span>
+            <h2 id="workoutTitle">Workout Session</h2>
             <p id="workoutDescription"></p>
           </div>
 
-          <!-- Active Session Progress Panel -->
+          <!-- Workout Subnavigation Pills -->
+          <div class="workout-subnav-bar">
+            <button class="subnav-pill active" type="button">Workout</button>
+            <button class="subnav-pill" type="button" id="workoutSeriesBadge">Sets</button>
+            <button class="subnav-pill" type="button" id="exerciseCount">5 Exercises</button>
+          </div>
+
+          <!-- Active Session Set Progress Panel -->
           <article class="panel session-progress-panel" aria-labelledby="sessionProgressTitle">
             <div class="session-progress-top">
               <div class="session-progress-info">
-                <span class="eyebrow">ACTIVE SESSION</span>
-                <h3 id="sessionProgressTitle">Workout progress</h3>
+                <span class="eyebrow">SESSION COMPLETION</span>
+                <h3 id="sessionProgressTitle">Live Workout Progress</h3>
                 <strong id="workoutProgressText">0 / 0 sets</strong>
               </div>
               <div class="workout-progress-ring" id="workoutProgressRing" role="img"
@@ -190,69 +379,72 @@
               aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
               <span id="workoutProgressFill"></span>
             </div>
-            <p class="muted" id="workoutProgressHint">
-              Tick a set when you finish it. Your draft is saved on this device.
-            </p>
           </article>
 
-          <!-- Rest Timer Panel -->
+          <!-- Interactive Rest Timer Card -->
           <article class="panel rest-timer-panel" aria-labelledby="restTimerTitle">
             <div class="timer-copy">
               <span class="eyebrow">RECOVERY BETWEEN SETS</span>
-              <h3 id="restTimerTitle">Rest timer</h3>
-              <p id="restTimerStatus" class="muted" aria-live="polite">Ready when you are.</p>
+              <h3 id="restTimerTitle">Rest Interval Timer</h3>
+              <p id="restTimerStatus" class="muted" aria-live="polite">Ready when you complete a set.</p>
             </div>
             <div class="timer-display-wrap">
               <div class="timer-display" id="restTimerDisplay" aria-live="off">01:30</div>
             </div>
             <div class="timer-controls">
               <button type="button" class="secondary-button" id="startRestButton">Start</button>
-              <button type="button" class="secondary-button" id="addRestButton">+15 sec</button>
+              <button type="button" class="secondary-button" id="addRestButton">+15s</button>
               <button type="button" class="secondary-button" id="skipRestButton">Skip</button>
             </div>
           </article>
 
+          <!-- Exercise List Header -->
           <div class="section-heading">
             <div>
-              <span class="eyebrow">YOUR EXERCISES</span>
-              <h2>Workout plan</h2>
+              <span class="eyebrow">TRAINING PROTOCOL</span>
+              <h2>Exercise Set Breakdown</h2>
             </div>
-            <span class="exercise-count" id="exerciseCount"></span>
           </div>
 
-          <!-- Exercise List with Interactive Set-by-Set Logging Cards -->
+          <!-- Interactive Exercise Cards with High-Impact "LOG SET" Buttons -->
           <div id="exerciseList" class="exercise-list"></div>
 
+          <!-- Science Recovery Guidance Card -->
           <article class="recovery-card">
-            <span class="recovery-icon" aria-hidden="true">✦</span>
+            <div class="recovery-icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+            </div>
             <div>
-              <h3>Recovery matters</h3>
+              <h3>Recovery &amp; Technique Integrity</h3>
               <p id="recoveryContent">
-                Control your technique, follow your rest periods and recover well between sessions.
+                Execute every repetition with strict eccentric control. Rest adequately between heavy compound efforts to optimize muscle hypertrophy.
               </p>
             </div>
           </article>
 
-          <!-- Workout Submission and Session Notes -->
+          <!-- Session Finalization & Save Panel -->
           <article class="panel logging-panel">
             <div class="section-heading compact">
               <div>
-                <span class="eyebrow">RECORD YOUR SESSION</span>
-                <h2>Complete session</h2>
+                <span class="eyebrow">SESSION COMPLETION</span>
+                <h2>Record Session</h2>
               </div>
             </div>
             <p class="muted">
-              Enter your actual weight and reps in the exercises above, then tick each completed set. Tap below to save the workout to your history.
+              Ensure all your completed sets are checked above, add notes if needed, then finalize your session.
             </p>
             <form id="workoutLogForm" novalidate>
               <div id="workoutLogInputs" class="hidden-inputs-host" aria-hidden="true"></div>
-              <label class="field-label" for="workoutNotes">Session notes (optional)</label>
-              <textarea id="workoutNotes" rows="3" maxlength="1000" placeholder="How did the workout feel?"></textarea>
+              <label class="field-label" for="workoutNotes">Session Notes (Optional)</label>
+              <textarea id="workoutNotes" rows="3" maxlength="1000" placeholder="How did weights, energy, and muscle pump feel today?"></textarea>
               <div class="workout-submit-row">
                 <button class="primary-button" type="submit">
-                  Save completed workout <span aria-hidden="true">↗</span>
+                  <span>Save Completed Session</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                 </button>
-                <span class="muted" id="workoutSaveHint">Saved locally on this device</span>
+                <span class="muted" id="workoutSaveHint">Encrypted locally on this device</span>
               </div>
               <p class="form-message" id="workoutLogMessage" role="status" aria-live="polite"></p>
             </form>
@@ -260,70 +452,175 @@
         </div>
       </section>
 
-      <!-- FOOD DIARY -->
-      <section class="page-section" id="food">
-        <div class="page-intro">
-          <span class="eyebrow">NUTRITION TRACKER</span>
-          <h2>Food diary</h2>
-          <p>Search common foods, set the amount you ate, and calculate estimated macros automatically.</p>
+
+      <!-- ==========================================================================
+           SECTION 6: PAGE 3 - NUTRITION & FOOD DIARY (MACRO RINGS, MEALS & DB)
+           ========================================================================== -->
+      <section class="page-section" id="food" aria-labelledby="foodHeading">
+        <h2 id="foodHeading" class="visually-hidden">Nutrition and Macro Tracking</h2>
+
+        <!-- Hero Nutrition Ring & 3 Mini Macro Rings -->
+        <article class="nutrition-hero-block">
+          <!-- Primary Calorie Ring -->
+          <div class="nutrition-main-ring">
+            <svg class="ring-svg" viewBox="0 0 200 200">
+              <circle class="ring-bg" cx="100" cy="100" r="85"></circle>
+              <circle class="ring-progress" id="nutritionMainRingProgress" cx="100" cy="100" r="85"
+                stroke-dasharray="534.07" stroke-dashoffset="534.07"></circle>
+            </svg>
+            <div class="ring-center-content nutrition-main-center">
+              <strong id="foodCaloriesTotal">0</strong>
+              <span>kcal logged</span>
+            </div>
+          </div>
+
+          <!-- 3 Mini Macro Rings (Protein, Carbs, Fat) -->
+          <div class="macro-rings-row" aria-label="Macronutrient distribution">
+            <!-- Protein Ring (Cyan) -->
+            <div class="macro-ring-col">
+              <div class="mini-ring-wrapper">
+                <svg class="ring-svg" viewBox="0 0 80 80">
+                  <circle class="ring-bg" cx="40" cy="40" r="32"></circle>
+                  <circle class="ring-progress ring-protein" id="miniProteinRing" cx="40" cy="40" r="32"
+                    stroke-dasharray="201.06" stroke-dashoffset="201.06"></circle>
+                </svg>
+                <span class="mini-ring-content" id="foodProteinTotal">0</span>
+              </div>
+              <span class="macro-ring-label protein-label">Protein</span>
+            </div>
+
+            <!-- Carbs Ring (Amber) -->
+            <div class="macro-ring-col">
+              <div class="mini-ring-wrapper">
+                <svg class="ring-svg" viewBox="0 0 80 80">
+                  <circle class="ring-bg" cx="40" cy="40" r="32"></circle>
+                  <circle class="ring-progress ring-carbs" id="miniCarbsRing" cx="40" cy="40" r="32"
+                    stroke-dasharray="201.06" stroke-dashoffset="201.06"></circle>
+                </svg>
+                <span class="mini-ring-content" id="foodCarbsTotal">0</span>
+              </div>
+              <span class="macro-ring-label carbs-label">Carbs</span>
+            </div>
+
+            <!-- Fat Ring (Rose) -->
+            <div class="macro-ring-col">
+              <div class="mini-ring-wrapper">
+                <svg class="ring-svg" viewBox="0 0 80 80">
+                  <circle class="ring-bg" cx="40" cy="40" r="32"></circle>
+                  <circle class="ring-progress ring-fat" id="miniFatRing" cx="40" cy="40" r="32"
+                    stroke-dasharray="201.06" stroke-dashoffset="201.06"></circle>
+                </svg>
+                <span class="mini-ring-content" id="foodFatTotal">0</span>
+              </div>
+              <span class="macro-ring-label fat-label">Fat</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- Meals Breakdown List: Breakfast, Lunch, Dinner, Snacks -->
+        <div class="meals-section-title">
+          <span>Meals Breakdown</span>
+          <span class="muted" id="foodDateLabel">Today</span>
         </div>
 
-        <div class="macro-summary-grid">
-          <article class="macro-summary-card calorie-card">
-            <span>Calories</span>
-            <strong><span id="foodCaloriesTotal">0</span> <small>kcal</small></strong>
-            <div class="macro-mini-track"><i id="foodCaloriesTrack"></i></div>
-          </article>
-          <article class="macro-summary-card">
-            <span>Protein</span>
-            <strong><span id="foodProteinTotal">0</span> <small>g</small></strong>
-            <div class="macro-mini-track"><i id="foodProteinTrack"></i></div>
-          </article>
-          <article class="macro-summary-card">
-            <span>Carbs</span>
-            <strong><span id="foodCarbsTotal">0</span> <small>g</small></strong>
-            <div class="macro-mini-track"><i id="foodCarbsTrack"></i></div>
-          </article>
-          <article class="macro-summary-card">
-            <span>Fat</span>
-            <strong><span id="foodFatTotal">0</span> <small>g</small></strong>
-            <div class="macro-mini-track"><i id="foodFatTrack"></i></div>
-          </article>
-          <article class="macro-summary-card">
-            <span>Fibre</span>
-            <strong><span id="foodFiberTotal">0</span> <small>g</small></strong>
-            <div class="macro-mini-track"><i id="foodFiberTrack"></i></div>
-          </article>
+        <div class="meals-list">
+          <!-- Breakfast -->
+          <div class="meal-row-card" data-meal-type="Breakfast">
+            <div class="meal-thumb" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
+                <line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/>
+              </svg>
+            </div>
+            <div class="meal-info">
+              <h3>Breakfast</h3>
+              <p><span id="mealKcalBreakfast">0</span> kcal</p>
+            </div>
+            <button type="button" class="meal-add-btn" data-add-meal="Breakfast">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>Add</span>
+            </button>
+          </div>
+
+          <!-- Lunch -->
+          <div class="meal-row-card" data-meal-type="Lunch">
+            <div class="meal-thumb" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 21a9 9 0 0 0 9-9H3a9 9 0 0 0 9 9Z"/><path d="M7 12V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v7"/>
+              </svg>
+            </div>
+            <div class="meal-info">
+              <h3>Lunch</h3>
+              <p><span id="mealKcalLunch">0</span> kcal</p>
+            </div>
+            <button type="button" class="meal-add-btn" data-add-meal="Lunch">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>Add</span>
+            </button>
+          </div>
+
+          <!-- Dinner -->
+          <div class="meal-row-card" data-meal-type="Dinner">
+            <div class="meal-thumb" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>
+              </svg>
+            </div>
+            <div class="meal-info">
+              <h3>Dinner</h3>
+              <p><span id="mealKcalDinner">0</span> kcal</p>
+            </div>
+            <button type="button" class="meal-add-btn" data-add-meal="Dinner">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>Add</span>
+            </button>
+          </div>
+
+          <!-- Snacks -->
+          <div class="meal-row-card" data-meal-type="Snacks">
+            <div class="meal-thumb" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 20.94c1.5 0 2.75 1.06 4 1.06 3 0 6-8 6-12.22A4.91 4.91 0 0 0 17 5c-2.22 0-4 1.44-5 2-1-.56-2.78-2-5-2a4.9 4.9 0 0 0-5 4.78C2 14 5 22 8 22c1.25 0 2.5-1.06 4-1.06Z"/>
+                <path d="M10 2c1 .5 2 2 2 5"/>
+              </svg>
+            </div>
+            <div class="meal-info">
+              <h3>Snacks</h3>
+              <p><span id="mealKcalSnacks">0</span> kcal</p>
+            </div>
+            <button type="button" class="meal-add-btn" data-add-meal="Snacks">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>Add</span>
+            </button>
+          </div>
         </div>
 
-        <p class="nutrition-disclaimer">
-          Food values are approximate per 100 g edible portion. Actual macros vary by variety, brand, recipe, cooking method and added oil. Use the package label for branded products.
-        </p>
-
-        <article class="panel food-database-panel">
+        <!-- Built-in Food Database Search Panel -->
+        <article class="panel food-database-panel" id="foodSearchPanel">
           <div class="section-heading food-database-heading">
             <div>
-              <span class="eyebrow">BUILT-IN FOOD DATABASE</span>
-              <h2>What did you eat?</h2>
-              <p class="muted">Choose a food to calculate its macros by weight.</p>
+              <span class="eyebrow">VERIFIED FOOD DATABASE</span>
+              <h2>Search &amp; Add Foods</h2>
+              <p class="muted">Search whole foods and ingredients with verified macronutrient ratios.</p>
             </div>
             <span class="database-count" id="foodResultCount">0 foods</span>
           </div>
 
           <div class="food-search-row">
             <label class="food-search-box" for="foodSearch">
-              <span aria-hidden="true">⌕</span>
-              <input id="foodSearch" type="search" placeholder="Search egg, paneer, rice, oats..." autocomplete="off">
+              <span class="search-icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              </span>
+              <input id="foodSearch" type="search" placeholder="Search paneer, eggs, oats, chicken, rice..." autocomplete="off">
             </label>
             <label class="category-select-label" for="foodCategory">
-              <span>Category</span>
               <select id="foodCategory">
-                <option value="all">All foods</option>
-                <option value="Protein">Protein</option>
+                <option value="all">All Categories</option>
+                <option value="Protein">Protein Sources</option>
                 <option value="Dairy">Dairy</option>
-                <option value="Grains">Grains</option>
-                <option value="Pulses">Pulses</option>
-                <option value="Fruit">Fruit</option>
+                <option value="Grains">Grains &amp; Cereals</option>
+                <option value="Pulses">Pulses &amp; Lentils</option>
+                <option value="Fruit">Fruits</option>
                 <option value="Vegetables">Vegetables</option>
                 <option value="Nuts & Seeds">Nuts &amp; Seeds</option>
                 <option value="Other">Other</option>
@@ -333,217 +630,325 @@
 
           <div id="foodDatabaseGrid" class="food-database-grid"></div>
           <div id="foodNoResults" class="empty-state hidden">
-            No matching foods. Try a shorter search or add it as a custom food below.
+            <p>No matching foods found in catalog. Create a custom entry below.</p>
           </div>
         </article>
 
+        <!-- Dynamic Portion Calculator Panel -->
         <article id="selectedFoodPanel" class="panel selected-food-panel hidden" aria-live="polite">
           <div class="selected-food-header">
             <div>
-              <span class="eyebrow">ADD TO TODAY'S DIARY</span>
-              <h2 id="selectedFoodName">Selected food</h2>
-              <p class="muted" id="selectedFoodServing">Values per 100 g</p>
+              <span class="eyebrow">PORTION CALCULATOR</span>
+              <h2 id="selectedFoodName">Selected Item</h2>
+              <p class="muted" id="selectedFoodServing">Nutritional reference per 100g</p>
             </div>
-            <button type="button" class="icon-button" id="closeSelectedFood" aria-label="Close food selection">×</button>
+            <button type="button" class="icon-button" id="closeSelectedFood" aria-label="Close food calculator">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
           </div>
 
           <div class="portion-controls">
-            <label for="foodAmount">Amount eaten (grams)
+            <label for="foodAmount">Amount Eaten (grams)
               <input id="foodAmount" type="number" min="1" max="5000" step="1" value="100" inputmode="numeric">
             </label>
-            <label for="foodMealType">Meal
+            <label for="foodMealType">Target Meal
               <select id="foodMealType">
-                <option>Breakfast</option>
-                <option>Lunch</option>
-                <option>Snacks</option>
-                <option>Dinner</option>
-                <option>Post-workout</option>
+                <option value="Breakfast">Breakfast</option>
+                <option value="Lunch">Lunch</option>
+                <option value="Dinner">Dinner</option>
+                <option value="Snacks">Snacks</option>
+                <option value="Post-workout">Post-workout</option>
               </select>
             </label>
           </div>
 
           <div class="macro-preview-grid">
-            <div><span>Calories</span><strong id="previewCalories">0 kcal</strong></div>
-            <div><span>Protein</span><strong id="previewProtein">0 g</strong></div>
-            <div><span>Carbs</span><strong id="previewCarbs">0 g</strong></div>
-            <div><span>Fat</span><strong id="previewFat">0 g</strong></div>
-            <div><span>Fibre</span><strong id="previewFiber">0 g</strong></div>
+            <div class="preview-metric"><span>Calories</span><strong id="previewCalories">0 kcal</strong></div>
+            <div class="preview-metric protein"><span>Protein</span><strong id="previewProtein">0 g</strong></div>
+            <div class="preview-metric carbs"><span>Carbs</span><strong id="previewCarbs">0 g</strong></div>
+            <div class="preview-metric fat"><span>Fat</span><strong id="previewFat">0 g</strong></div>
+            <div class="preview-metric"><span>Fibre</span><strong id="previewFiber">0 g</strong></div>
           </div>
 
           <div class="selected-food-actions">
-            <p class="muted" id="foodCalculationHint">Calculated from the selected food's per-100 g values.</p>
-            <button type="button" class="primary-button" id="addSelectedFood">Add to diary +</button>
+            <p class="muted" id="foodCalculationHint">Calculated dynamically based on serving size.</p>
+            <button type="button" class="primary-button" id="addSelectedFood">
+              <span>Add to Diary</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
           </div>
         </article>
 
+        <!-- Custom Food Creation Form -->
         <details class="panel custom-food-details">
           <summary>
             <span>
-              <strong>Can't find your food?</strong>
-              <small>Add a custom or branded food using its nutrition label.</small>
+              <strong>Can't find a packaged food?</strong>
+              <small>Add custom nutritional data directly from nutrition labels.</small>
             </span>
-            <span class="details-chevron">＋</span>
+            <span class="details-chevron" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </span>
           </summary>
           <form id="foodForm" class="form-grid custom-food-form">
             <div class="field">
-              <label for="foodName">Food / meal name</label>
-              <input id="foodName" required maxlength="100" placeholder="e.g. Your whey brand, 1 scoop">
+              <label for="foodName">Food / Item Name</label>
+              <input id="foodName" required maxlength="100" placeholder="e.g. Whey Isolate, Almond Milk">
             </div>
             <div class="field">
-              <label for="customFoodMeal">Meal</label>
+              <label for="customFoodMeal">Target Meal</label>
               <select id="customFoodMeal">
                 <option>Breakfast</option>
                 <option>Lunch</option>
-                <option>Snacks</option>
                 <option>Dinner</option>
+                <option>Snacks</option>
                 <option>Post-workout</option>
               </select>
             </div>
             <div class="field">
               <label for="foodCalories">Calories (kcal)</label>
-              <input id="foodCalories" type="number" min="0" max="10000" step="1" required placeholder="From label" inputmode="numeric">
+              <input id="foodCalories" type="number" min="0" max="10000" step="1" required placeholder="kcal" inputmode="numeric">
             </div>
             <div class="field">
               <label for="foodProtein">Protein (g)</label>
-              <input id="foodProtein" type="number" min="0" max="1000" step="0.1" required placeholder="From label" inputmode="decimal">
+              <input id="foodProtein" type="number" min="0" max="1000" step="0.1" required placeholder="grams" inputmode="decimal">
             </div>
             <div class="field">
-              <label for="foodCarbs">Carbs (g)</label>
+              <label for="foodCarbs">Carbohydrates (g)</label>
               <input id="foodCarbs" type="number" min="0" max="1000" step="0.1" value="0" required inputmode="decimal">
             </div>
             <div class="field">
-              <label for="foodFat">Fat (g)</label>
+              <label for="foodFat">Fats (g)</label>
               <input id="foodFat" type="number" min="0" max="1000" step="0.1" value="0" required inputmode="decimal">
             </div>
-            <div class="field">
-              <label for="foodFiber">Fibre (g)</label>
-              <input id="foodFiber" type="number" min="0" max="1000" step="0.1" value="0" required inputmode="decimal">
-            </div>
-            <button class="primary-button" type="submit">Save custom food +</button>
+            <button class="primary-button" type="submit">
+              <span>Save Custom Food</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
           </form>
         </details>
 
+        <!-- Today's Logged Items List -->
         <article class="panel section-panel">
           <div class="section-heading compact">
             <div>
-              <span class="eyebrow">TODAY'S INTAKE</span>
-              <h2>Today's meals</h2>
+              <span class="eyebrow">DIARY RECORDS</span>
+              <h2>Today's Intake Log</h2>
             </div>
-            <span class="muted" id="foodDateLabel"></span>
           </div>
           <div id="foodList" class="entry-list"></div>
         </article>
 
-        <article class="panel water-panel">
-          <div>
-            <span class="eyebrow">HYDRATION</span>
-            <h2>Water tracker</h2>
-            <p class="muted">Each tap records 250 ml of water.</p>
-          </div>
-          <div class="water-total">
-            <strong id="foodWaterTotal">0</strong>
-            <span>ml today</span>
-          </div>
-          <button class="primary-button" id="addWaterButton" type="button">+ Add 250 ml</button>
-        </article>
-
         <p class="nutrition-source">
-          Nutrition reference: <a href="https://www.nin.res.in/ebooks/IFCT2017.pdf" target="_blank" rel="noopener noreferrer">ICMR–NIN Indian Food Composition Tables 2017</a>. The built-in list is a starter database of generic foods, not a brand-specific or clinical nutrition database.
+          Nutritional standard: ICMR–NIN Indian Food Composition Tables &amp; USDA FoodData Central.
         </p>
       </section>
 
-      <!-- BODY WEIGHT -->
-      <section class="page-section" id="weight">
+
+      <!-- ==========================================================================
+           SECTION 7: PAGE 4 - BODY WEIGHT TRACKER
+           ========================================================================== -->
+      <section class="page-section" id="weight" aria-labelledby="weightHeading">
+        <h2 id="weightHeading" class="visually-hidden">Body Weight Tracker</h2>
         <div class="page-intro">
-          <span class="eyebrow">BODY METRICS</span>
-          <h2>Body weight</h2>
-          <p>Record measurements consistently to understand your longer-term trend.</p>
+          <span class="eyebrow">PHYSICAL METRICS</span>
+          <h2>Body Weight</h2>
+          <p>Weigh yourself consistently under identical morning conditions to monitor your rolling trend.</p>
         </div>
+
         <article class="panel">
-          <h2>Add measurement</h2>
+          <h2>Log Weight Entry</h2>
           <form id="weightForm" class="form-grid">
             <div class="field">
-              <label for="weightDate">Date</label>
+              <label for="weightDate">Measurement Date</label>
               <input id="weightDate" type="date" required>
             </div>
             <div class="field">
-              <label for="weightValue">Weight (kg)</label>
-              <input id="weightValue" type="number" min="1" max="500" step="0.1" required placeholder="e.g. 55.5" inputmode="decimal">
+              <label for="weightValue">Body Weight (kg)</label>
+              <input id="weightValue" type="number" min="1" max="500" step="0.1" required placeholder="e.g. 74.2" inputmode="decimal">
             </div>
-            <button class="primary-button" type="submit">Save weight +</button>
+            <button class="primary-button" type="submit">
+              <span>Save Measurement</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            </button>
           </form>
         </article>
+
         <article class="panel section-panel">
           <div class="section-heading compact">
-            <h2>Weight history</h2>
-            <span class="muted">Newest first</span>
+            <h2>Weight History</h2>
+            <span class="muted">Chronological Log</span>
           </div>
           <div id="weightHistory" class="entry-list"></div>
         </article>
       </section>
 
-      <!-- PROGRESS -->
-      <section class="page-section" id="progress">
+
+      <!-- ==========================================================================
+           SECTION 8: PAGE 5 - PROGRESS ANALYTICS & CHARTS
+           ========================================================================== -->
+      <section class="page-section" id="progress" aria-labelledby="progressHeading">
+        <h2 id="progressHeading" class="visually-hidden">Progress &amp; Performance</h2>
         <div class="page-intro">
-          <span class="eyebrow">YOUR TRAINING DATA</span>
-          <h2>Progress</h2>
-          <p>Compare completed-set performance across your workout sessions.</p>
+          <span class="eyebrow">ANALYTICAL METRICS</span>
+          <h2>Training Progress</h2>
+          <p>Quantify strength progression, completed sets, and volume across your training lifecycle.</p>
         </div>
+
         <article class="panel">
           <div class="progress-controls">
             <div class="field">
-              <label for="progressExercise">Exercise</label>
+              <label for="progressExercise">Exercise Target</label>
               <select id="progressExercise"></select>
             </div>
             <div class="field">
-              <label for="progressMetric">Metric</label>
+              <label for="progressMetric">Progression Metric</label>
               <select id="progressMetric">
-                <option value="weight">Highest completed weight (kg)</option>
-                <option value="reps">Highest completed reps</option>
+                <option value="weight">Highest Load Handled (kg)</option>
+                <option value="reps">Highest Repetitions Completed</option>
               </select>
             </div>
           </div>
           <div id="progressSummary" class="progress-summary"></div>
-          <div id="progressChart" class="chart-container"></div>
+          <div id="progressChart" class="chart-container" aria-label="Visual performance progression chart"></div>
         </article>
+
         <article class="panel section-panel">
           <div class="section-heading compact">
-            <h2>Workout history</h2>
-            <span class="muted">Saved sessions</span>
+            <h2>Logged Session Archive</h2>
+            <span class="muted">Verified Sessions</span>
           </div>
           <div id="progressHistory" class="entry-list"></div>
         </article>
       </section>
 
-      <footer class="main-footer">FITTRACK · PROGRESS OVER PERFECTION</footer>
+      <!-- App Footer -->
+      <footer class="main-footer">
+        <span>FITTRACK · PRO MAX DESIGN INTELLIGENCE · PROGRESS OVER PERFECTION</span>
+      </footer>
     </main>
   </div>
 
-  <!-- Mobile Bottom Tab Navigation for fast one-thumb switching -->
-  <nav class="mobile-bottom-nav" aria-label="Quick navigation">
-    <button class="mobile-tab-btn active" data-page="dashboard">
-      <span class="tab-icon">◫</span>
-      <span class="tab-label">Dashboard</span>
+
+  <!-- ==========================================================================
+       SECTION 9: MOBILE BOTTOM TAB BAR & ELEVATED "+" FAB
+       ========================================================================== -->
+  <nav class="mobile-bottom-nav" aria-label="Mobile quick tab navigation">
+    <button class="mobile-tab-btn active" data-page="dashboard" aria-label="Dashboard">
+      <span class="tab-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+          <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+          <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+          <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+        </svg>
+      </span>
+      <span class="tab-label">Home</span>
     </button>
-    <button class="mobile-tab-btn" data-page="workouts">
-      <span class="tab-icon">↗</span>
+
+    <button class="mobile-tab-btn" data-page="workouts" aria-label="Workouts">
+      <span class="tab-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 5v14M18 5v14M2 9v6M22 9v6M6 12h12"/>
+        </svg>
+      </span>
       <span class="tab-label">Workouts</span>
     </button>
-    <button class="mobile-tab-btn" data-page="food">
-      <span class="tab-icon">◉</span>
-      <span class="tab-label">Food</span>
+
+    <!-- Center Elevated Glowing Cyan FAB Button -->
+    <button class="fab-center-btn" id="fabQuickAdd" aria-label="Open Quick Add Actions" type="button">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
     </button>
-    <button class="mobile-tab-btn" data-page="weight">
-      <span class="tab-icon">⚖</span>
-      <span class="tab-label">Weight</span>
+
+    <button class="mobile-tab-btn" data-page="food" aria-label="Nutrition">
+      <span class="tab-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+        </svg>
+      </span>
+      <span class="tab-label">Nutrition</span>
     </button>
-    <button class="mobile-tab-btn" data-page="progress">
-      <span class="tab-icon">⌁</span>
+
+    <button class="mobile-tab-btn" data-page="progress" aria-label="Progress">
+      <span class="tab-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
+          <polyline points="16 7 22 7 22 13"></polyline>
+        </svg>
+      </span>
       <span class="tab-label">Progress</span>
     </button>
   </nav>
 
+
+  <!-- ==========================================================================
+       SECTION 10: QUICK ACTION BOTTOM SHEET MODAL (TRIGGERED BY CENTER FAB)
+       ========================================================================== -->
+  <div class="action-sheet" id="actionSheet" role="dialog" aria-modal="true" aria-labelledby="actionSheetTitle">
+    <div class="action-sheet-header">
+      <div class="sheet-title-group">
+        <span class="eyebrow">QUICK LOG</span>
+        <h3 id="actionSheetTitle">Fast Track Action</h3>
+      </div>
+      <button type="button" class="sidebar-close-button" id="closeActionSheet" style="display:grid;" aria-label="Close modal">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+
+    <div class="action-sheet-grid">
+      <button class="sheet-action-item" data-action="quick-meal" type="button">
+        <div class="sheet-action-icon meal-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+          </svg>
+        </div>
+        <strong>Log Meal</strong>
+        <small>Track foods &amp; macros</small>
+      </button>
+
+      <button class="sheet-action-item" id="quickWaterAction" type="button">
+        <div class="sheet-action-icon water-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>
+          </svg>
+        </div>
+        <strong>Drink Water</strong>
+        <small>Add +250 ml today</small>
+      </button>
+
+      <button class="sheet-action-item" data-action="quick-weight" type="button">
+        <div class="sheet-action-icon weight-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="3" width="20" height="18" rx="4"/>
+            <path d="M12 7a5 5 0 0 0-5 5h10a5 5 0 0 0-5-5Z"/>
+          </svg>
+        </div>
+        <strong>Log Weight</strong>
+        <small>Morning measurement</small>
+      </button>
+
+      <button class="sheet-action-item" data-action="quick-workout" type="button">
+        <div class="sheet-action-icon workout-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 5v14M18 5v14M2 9v6M22 9v6M6 12h12"/>
+          </svg>
+        </div>
+        <strong>Start Workout</strong>
+        <small>Load training program</small>
+      </button>
+    </div>
+  </div>
+
+  <!-- Main JavaScript Application Logic -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" defer></script>
+  <script src="config.js" defer></script>
   <script src="sxript.js" defer></script>
+  <script src="cloud.js" defer></script>
+  <script src="scene3d.js" defer></script>
 </body>
 
 </html>
